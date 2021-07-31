@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--统一版本修改 versions:set -DnewVersion=0.0.1-SNAPSHOT-->
+    <artifactId>clever-task</artifactId>
+    <version>${revision}</version>
+    <packaging>pom</packaging>
+
+    <description>简单的定时任务系统</description>
+    <url>https://github.com/Lzw2016/clever-task.git</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://github.com/Lzw2016/clever-task/raw/main/LICENSE</url>
+        </license>
+    </licenses>
+
+    <parent>
+        <groupId>org.clever</groupId>
+        <artifactId>clever-parent</artifactId>
+        <version>2.4.9.0</version>
+        <relativePath/>
+    </parent>
+
+    <repositories>
+        <repository>
+            <id>nexus-central</id>
+            <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
+        </repository>
+        <repository>
+            <id>nexus-central-1</id>
+            <url>https://repo1.maven.org/maven2/</url>
+        </repository>
+        <repository>
+            <id>nexus-central-2</id>
+            <url>http://central.maven.org/maven2/</url>
+        </repository>
+        <repository>
+            <id>nexus-spring</id>
+            <url>https://repo.spring.io/libs-release/</url>
+        </repository>
+        <repository>
+            <id>nexus-snapshots</id>
+            <url>http://nexus.msvc.top/repository/maven-snapshots/</url>
+        </repository>
+        <repository>
+            <id>nexus-releases</id>
+            <url>http://nexus.msvc.top/repository/maven-releases/</url>
+        </repository>
+    </repositories>
+
+    <modules>
+        <module>clever-task-core</module>
+    </modules>
+
+    <properties>
+        <revision>0.0.1-SNAPSHOT</revision>
+        <downloadSources>true</downloadSources>
+        <downloadJavadocs>true</downloadJavadocs>
+        <java.version>1.8</java.version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.compilerVersion>1.8</maven.compiler.compilerVersion>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!--当前项目模块-->
+            <dependency>
+                <groupId>org.clever</groupId>
+                <artifactId>clever-task-core</artifactId>
+                <version>${revision}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>
