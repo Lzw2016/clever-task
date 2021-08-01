@@ -1,5 +1,5 @@
-create database if not exists `dynamic_metrics` default character set = utf8;
-# use `dynamic_metrics`;
+create database if not exists `clever_task` character set 'utf8' collate 'utf8_general_ci';
+# use `clever_task`;
 
 
 /* ====================================================================================================================
@@ -37,8 +37,8 @@ create table scheduler
     id                  bigint          not null        auto_increment                          comment '主键id',
     namespace           varchar(63)     not null                                                comment '命名空间(同一个namespace的不同调度器属于同一个集群)',
     instance_name       varchar(127)    not null                                                comment '调度器实例名称',
-    last_checkin_time   datetime(3)     not null                                                comment '最后心跳时间',
-    checkin_interval    bigint          not null        default 3000                            comment '心跳频率(单位：毫秒)',
+    last_heartbeat_time datetime(3)     not null                                                comment '最后心跳时间',
+    heartbeat_interval  bigint          not null        default 3000                            comment '心跳频率(单位：毫秒)',
     config              text            not null                                                comment '调度器配置，线程池大小、负载权重、最大并发任务数...',
     description         varchar(511)                                                            comment '描述',
     create_at           datetime(3)     not null        default current_timestamp(3)            comment '创建时间',
@@ -78,14 +78,14 @@ create table job
     id                      bigint          not null        auto_increment                          comment '主键id',
     namespace               varchar(63)     not null                                                comment '命名空间',
     name                    varchar(127)    not null                                                comment '任务名称',
-    type                    tinyint         not null                                                comment '任务类型，1：http调用，2：js脚本，3：shell脚本，4：java调用',
+    type                    tinyint         not null                                                comment '任务类型，1：http调用，2：java调用，3：js脚本，4：shell脚本',
     max_reentry             tinyint         not null        default 0                               comment '最大重入执行数量(对于单个节点当前任务未执行完成就触发了下一次执行导致任务重入执行)，小于等于0：表示禁止重入执行',
     allow_concurrent        tinyint         not null        default 0                               comment '是否允许多节点并发执行，0：禁止，1：允许',
     max_retry_count         int             not null        default 0                               comment '执行失败时的最大重试次数',
-    route_strategy          tinyint         not null        default 1                               comment '路由策略，1：不启用，2：指定节点优先，3：固定节点白名单，4：固定节点黑名单',
-    first_scheduler         varchar(2047)                                                           comment '路由策略，2-指定节点优先，调度器名称集合',
-    whitelist_scheduler     varchar(2047)                                                           comment '路由策略，3-固定节点白名单，调度器名称集合',
-    blacklist_scheduler     varchar(2047)                                                           comment '路由策略，4-固定节点黑名单，调度器名称集合',
+    route_strategy          tinyint         not null        default 1                               comment '路由策略，0：不启用，1：指定节点优先，2：固定节点白名单，3：固定节点黑名单',
+    first_scheduler         varchar(2047)                                                           comment '路由策略，1-指定节点优先，调度器名称集合',
+    whitelist_scheduler     varchar(2047)                                                           comment '路由策略，2-固定节点白名单，调度器名称集合',
+    blacklist_scheduler     varchar(2047)                                                           comment '路由策略，3-固定节点黑名单，调度器名称集合',
     load_balance            tinyint         not null        default 1                               comment '负载均衡策略，1：抢占，2：随机，3：轮询，4：一致性HASH',
     is_update_data          tinyint         not null        default 1                               comment '是否更新任务数据，0：不更新，1：更新',
     job_data                text                                                                    comment '任务数据(json格式)',
