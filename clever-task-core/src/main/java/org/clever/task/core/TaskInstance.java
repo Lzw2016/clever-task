@@ -13,10 +13,7 @@ import org.clever.task.core.utils.JacksonMapper;
 import org.clever.task.core.utils.JobTriggerUtils;
 
 import javax.sql.DataSource;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -47,11 +44,40 @@ public class TaskInstance {
         4.维护接下来N秒内需要触发的触发器列表
         5.调度器轮询任务
     */
-    /**
-     * 心跳保持-守护线程
-     */
-    private final DaemonExecutor heartbeatDaemon = new DaemonExecutor();
 
+    /**
+     * 数据完整性校验、一致性校验 (守护线程)
+     */
+    private final DaemonExecutor dataCheckDaemon = new DaemonExecutor("定时任务数据校验");
+    /**
+     * 调度器节点注册 (守护线程)
+     */
+    private final DaemonExecutor registerSchedulerDaemon = new DaemonExecutor("调度器节点注册");
+    /**
+     * 初始化触发器下一次触发时间(校准触发器触发时间) (守护线程)
+     */
+    private final DaemonExecutor calcNextFireTimeDaemon = new DaemonExecutor("校准触发器触发时间");
+
+    /**
+     * 心跳保持 (守护线程)
+     */
+    private final DaemonExecutor heartbeatDaemon = new DaemonExecutor("心跳保持");
+    /**
+     * 维护当前集群可用的调度器列表 (守护线程)
+     */
+    private final DaemonExecutor reloadSchedulerDaemon = new DaemonExecutor("加载调度器");
+    /**
+     * 维护定时任务列表 (守护线程)
+     */
+    private final DaemonExecutor reloadJobDaemon = new DaemonExecutor("加载定时任务");
+    /**
+     * 维护接下来N秒内需要触发的触发器列表 (守护线程)
+     */
+    private final DaemonExecutor reloadNextTriggerDaemon = new DaemonExecutor("加载将要触发的触发器");
+    /**
+     * 调度器轮询任务 (守护线程)
+     */
+    private final DaemonExecutor jobTriggerDaemon = new DaemonExecutor("调度器轮询任务");
 
     /**
      * 调度线程池
@@ -61,6 +87,13 @@ public class TaskInstance {
      * 定时任务执行线程池
      */
     private final ThreadPoolExecutor jobExecutor;
+
+    /**
+     * 定时任务执行器实现列表
+     */
+    private final List<JobExecutor> jobExecutors;
+
+
     /**
      * 守护线程池
      */
@@ -110,8 +143,7 @@ public class TaskInstance {
      */
     private final Object schedulerLock = new Object();
 
-
-    public TaskInstance(DataSource dataSource, SchedulerConfig schedulerConfig) {
+    public TaskInstance(DataSource dataSource, SchedulerConfig schedulerConfig, List<JobExecutor> jobExecutors) {
         // 初始化数据源
         schedulerStore = new TaskStore(dataSource);
         // 注册调度器
@@ -133,6 +165,10 @@ public class TaskInstance {
                 TimeUnit.SECONDS,
                 new LinkedBlockingQueue<>(schedulerConfig.getMaxConcurrent())
         );
+        // 初始化定时任务执行器实现列表
+        jobExecutors.sort(Comparator.comparingInt(JobExecutor::order));
+        this.jobExecutors = jobExecutors;
+        // 停止线程池操作
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (daemonFuture != null && !daemonFuture.isDone() && !daemonFuture.isCancelled()) {
                 try {
@@ -695,6 +731,17 @@ public class TaskInstance {
 
     private void runJob(final Date dbNow, final Job job) {
         log.info("#### ---> 模拟执行定时任务 | name={} | time={}", job.getName(), DateTimeUtils.formatToString(dbNow, "HH:mm:ss.SSS"));
+        JobExecutor jobExecutor = null;
+        for (JobExecutor executor : jobExecutors) {
+            if (executor.support(job.getType())) {
+                jobExecutor = executor;
+                break;
+            }
+        }
+        if (jobExecutor == null) {
+            throw new SchedulerException(String.format("暂不支持的任务类型，Job(id=%s)", job.getId()));
+        }
+        jobExecutor.exec(dbNow, job);
 //        switch (job.getType()) {
 //            case EnumConstant.JOB_TYPE_1:
 //                // http调用 TODO 暂不支持http任务

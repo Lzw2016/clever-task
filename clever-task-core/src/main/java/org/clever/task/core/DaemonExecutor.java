@@ -20,6 +20,10 @@ public class DaemonExecutor {
     private static final int INITIAL_DELAY = 0;
 
     /**
+     * 守护线程名称
+     */
+    private final String name;
+    /**
      * 执行器线程池
      */
     public final ScheduledExecutorService executor;
@@ -37,7 +41,8 @@ public class DaemonExecutor {
     @Getter
     private boolean running = false;
 
-    public DaemonExecutor() {
+    public DaemonExecutor(String name) {
+        this.name = name;
         executor = Executors.newSingleThreadScheduledExecutor();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (future != null && !future.isDone() && !future.isCancelled()) {
@@ -63,29 +68,11 @@ public class DaemonExecutor {
      * @param command 任务逻辑
      * @param period  两次执行任务的时间间隔(单位：毫秒)
      */
-    public void scheduleAtFixedRate(Runnable command, long period) {
+    public void scheduleAtFixedRate(final Runnable command, final long period) {
         Assert.notNull(command, "参数command不能为空");
         Assert.isTrue(period > 0, "参数period值必须大于0");
         stop();
-        future = executor.scheduleAtFixedRate(() -> {
-            if (running) {
-                // log.debug("[SchedulerInstance]-[{}] 守护线程正在运行，等待...", this.getSchedulerInstanceName());
-                return;
-            }
-            synchronized (lock) {
-                if (running) {
-                    // log.debug("[SchedulerInstance]-[{}] 守护线程正在运行，等待...", this.getSchedulerInstanceName());
-                    return;
-                }
-                running = true;
-                try {
-                    command.run();
-                    // } catch (Exception e) {
-                } finally {
-                    running = false;
-                }
-            }
-        }, INITIAL_DELAY, period, TimeUnit.MILLISECONDS);
+        future = executor.scheduleAtFixedRate(() -> run(command), INITIAL_DELAY, period, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -94,29 +81,11 @@ public class DaemonExecutor {
      * @param command 任务逻辑
      * @param delay   固定延时时间(单位：毫秒)
      */
-    public void scheduleWithFixedDelay(Runnable command, long delay) {
+    public void scheduleWithFixedDelay(final Runnable command, final long delay) {
         Assert.notNull(command, "参数command不能为空");
         Assert.isTrue(delay > 0, "参数delay值必须大于0");
         stop();
-        future = executor.scheduleWithFixedDelay(() -> {
-            if (running) {
-                // log.debug("[SchedulerInstance]-[{}] 守护线程正在运行，等待...", this.getSchedulerInstanceName());
-                return;
-            }
-            synchronized (lock) {
-                if (running) {
-                    // log.debug("[SchedulerInstance]-[{}] 守护线程正在运行，等待...", this.getSchedulerInstanceName());
-                    return;
-                }
-                running = true;
-                try {
-                    command.run();
-                    // } catch (Exception e) {
-                } finally {
-                    running = false;
-                }
-            }
-        }, INITIAL_DELAY, delay, TimeUnit.MILLISECONDS);
+        future = executor.scheduleWithFixedDelay(() -> run(command), INITIAL_DELAY, delay, TimeUnit.MILLISECONDS);
     }
 
     /**
@@ -125,6 +94,26 @@ public class DaemonExecutor {
     public void stop() {
         if (future != null && !future.isDone() && !future.isCancelled()) {
             future.cancel(true);
+        }
+    }
+
+    private void run(final Runnable command) {
+        if (running) {
+            // log.debug("[SchedulerInstance]-[{}] 守护线程正在运行，等待...", this.getSchedulerInstanceName());
+            return;
+        }
+        synchronized (lock) {
+            if (running) {
+                // log.debug("[SchedulerInstance]-[{}] 守护线程正在运行，等待...", this.getSchedulerInstanceName());
+                return;
+            }
+            running = true;
+            try {
+                command.run();
+                // } catch (Exception e) {
+            } finally {
+                running = false;
+            }
         }
     }
 }

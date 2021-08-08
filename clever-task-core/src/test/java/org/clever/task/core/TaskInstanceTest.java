@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.clever.task.core.config.SchedulerConfig;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -45,7 +46,7 @@ public class TaskInstanceTest {
     @Test
     public void t01() throws InterruptedException {
         HikariDataSource dataSource = newDataSource();
-        TaskInstance taskInstance = new TaskInstance(dataSource, newSchedulerConfig());
+        TaskInstance taskInstance = new TaskInstance(dataSource, newSchedulerConfig(), Collections.emptyList());
         taskInstance.start();
         Thread.sleep(1000 * 60 * 2);
         Runtime.getRuntime().addShutdownHook(new Thread(dataSource::close));
