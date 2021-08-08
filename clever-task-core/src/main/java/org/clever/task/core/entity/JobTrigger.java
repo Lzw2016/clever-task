@@ -1,9 +1,9 @@
 package org.clever.task.core.entity;
 
-import java.util.Date;
-import java.io.Serializable;
-
 import lombok.Data;
+
+import java.io.Serializable;
+import java.util.Date;
 
 /**
  * 任务触发器(JobTrigger)实体类
@@ -64,7 +64,7 @@ public class JobTrigger implements Serializable {
     private Integer state;
 
     /**
-     * 任务类型，1：cron触发，2：固定间隔触发，3：固定延时触发
+     * 任务类型，1：cron触发，2：固定速率触发，3：固定延时触发
      */
     private Integer type;
 
@@ -74,7 +74,7 @@ public class JobTrigger implements Serializable {
     private String cron;
 
     /**
-     * 固定间隔触发，间隔时间(单位：秒)
+     * 固定速率触发，间隔时间(单位：秒)
      */
     private Long fixedInterval;
 

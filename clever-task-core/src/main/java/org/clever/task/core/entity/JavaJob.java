@@ -1,9 +1,9 @@
 package org.clever.task.core.entity;
 
-import java.util.Date;
-import java.io.Serializable;
-
 import lombok.Data;
+
+import java.io.Serializable;
+import java.util.Date;
 
 /**
  * js脚本任务(JavaJob)实体类

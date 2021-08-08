@@ -1,9 +1,9 @@
 package org.clever.task.core.entity;
 
-import java.util.Date;
-import java.io.Serializable;
-
 import lombok.Data;
+
+import java.io.Serializable;
+import java.util.Date;
 
 /**
  * 任务触发器日志(JobTriggerLog)实体类

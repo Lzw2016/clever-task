@@ -1,9 +1,9 @@
 package org.clever.task.core.entity;
 
-import java.util.Date;
-import java.io.Serializable;
-
 import lombok.Data;
+
+import java.io.Serializable;
+import java.util.Date;
 
 /**
  * 调度器(Scheduler)实体类
@@ -57,4 +57,24 @@ public class Scheduler implements Serializable {
      * 更新时间
      */
     private Date updateAt;
+
+    @Data
+    public static final class Config implements Serializable {
+        /**
+         * 调度线程池大小
+         */
+        private Integer schedulerExecutorPoolSize;
+        /**
+         * 定时任务执行线程池大小
+         */
+        private Integer jobExecutorPoolSize;
+        /**
+         * 负载权重
+         */
+        private Double loadWeight;
+        /**
+         * 最大并发任务数(大于等于jobExecutorPoolSize值)
+         */
+        private Integer maxConcurrent;
+    }
 }
