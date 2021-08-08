@@ -1,10 +1,12 @@
 package org.clever.task.core;
 
 /**
+ * 定时任务调度器实例状态
+ * <p>
  * 作者：lizw <br/>
  * 创建时间：2021/08/02 17:03 <br/>
  */
-public enum SchedulerState {
+public enum TaskState {
     /**
      * 未初始化
      */

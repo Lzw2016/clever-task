@@ -1,6 +1,8 @@
 package org.clever.task.core;
 
 /**
+ * SQL语句常量
+ * <p>
  * 作者：lizw <br/>
  * 创建时间：2021/08/03 10:59 <br/>
  */

@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 创建时间：2021/08/08 15:55 <br/>
  */
 @Slf4j
-public class SchedulerInstanceTest {
+public class TaskInstanceTest {
     public static HikariConfig newHikariConfig() {
         HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setDriverClassName("com.mysql.cj.jdbc.Driver");
@@ -45,8 +45,8 @@ public class SchedulerInstanceTest {
     @Test
     public void t01() throws InterruptedException {
         HikariDataSource dataSource = newDataSource();
-        SchedulerInstance schedulerInstance = new SchedulerInstance(dataSource, newSchedulerConfig());
-        schedulerInstance.start();
+        TaskInstance taskInstance = new TaskInstance(dataSource, newSchedulerConfig());
+        taskInstance.start();
         Thread.sleep(1000 * 60 * 2);
         Runtime.getRuntime().addShutdownHook(new Thread(dataSource::close));
     }

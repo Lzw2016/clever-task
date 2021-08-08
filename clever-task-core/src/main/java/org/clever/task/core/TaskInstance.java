@@ -20,13 +20,13 @@ import java.util.Objects;
 import java.util.concurrent.*;
 
 /**
- * 调度器实例
+ * 定时任务调度器实例
  * <p>
  * 作者：lizw <br/>
  * 创建时间：2021/08/01 20:38 <br/>
  */
 @Slf4j
-public class SchedulerInstance {
+public class TaskInstance {
     // 线程池线程保持时间
     private static final long THREAD_POOL_KEEP_ALIVE_SECONDS = 60L;
     // 定时任务触发线程轮询的时间间隔(单位：毫秒)
@@ -35,6 +35,23 @@ public class SchedulerInstance {
     private static final int NEXT_TRIGGER_INTERVAL = 2;
     // SchedulerContext allJobMap 数据自动刷新时间间隔
     private static final int JOB_RELOAD_INTERVAL = 3_000;
+
+    /*
+        1.数据完整性校验、一致性校验
+        2.调度器节点注册
+        3.初始化触发器下一次触发时间(校准触发器触发时间)
+        ------------------------------------------------------
+        1.心跳保持
+        2.维护当前集群可用的调度器列表
+        3.维护定时任务列表
+        4.维护接下来N秒内需要触发的触发器列表
+        5.调度器轮询任务
+    */
+    /**
+     * 心跳保持-守护线程
+     */
+    private final DaemonExecutor heartbeatDaemon = new DaemonExecutor();
+
 
     /**
      * 调度线程池
@@ -79,27 +96,28 @@ public class SchedulerInstance {
     /**
      * 调度器数据存储对象
      */
-    private final SchedulerStore schedulerStore;
+    private final TaskStore schedulerStore;
     /**
      * 调度器上下文
      */
-    private final SchedulerContext schedulerContext;
+    private final TaskContext schedulerContext;
     /**
      * 调度器状态
      */
-    private volatile SchedulerState schedulerState = SchedulerState.None;
+    private volatile TaskState schedulerState = TaskState.None;
     /**
      * 调度器锁
      */
     private final Object schedulerLock = new Object();
 
-    public SchedulerInstance(DataSource dataSource, SchedulerConfig schedulerConfig) {
+
+    public TaskInstance(DataSource dataSource, SchedulerConfig schedulerConfig) {
         // 初始化数据源
-        schedulerStore = new SchedulerStore(dataSource);
+        schedulerStore = new TaskStore(dataSource);
         // 注册调度器
         Scheduler scheduler = toScheduler(schedulerConfig);
         scheduler = registerScheduler(scheduler);
-        schedulerContext = new SchedulerContext(this, schedulerConfig, scheduler);
+        schedulerContext = new TaskContext(this, schedulerConfig, scheduler);
         // 初始化线程池
         schedulerExecutor = new ThreadPoolExecutor(
                 schedulerConfig.getSchedulerExecutorPoolSize(),
@@ -178,14 +196,14 @@ public class SchedulerInstance {
     /**
      * 调度器上下文
      */
-    public SchedulerContext getContext() {
+    public TaskContext getContext() {
         return schedulerContext;
     }
 
     /**
      * 当前调度器状态
      */
-    public SchedulerState getSchedulerState() {
+    public TaskState getSchedulerState() {
         return schedulerState;
     }
 
@@ -330,21 +348,21 @@ public class SchedulerInstance {
 
     // 启动调度器
     private void doStart() {
-        if (schedulerState != SchedulerState.None && schedulerState != SchedulerState.Pause) {
+        if (schedulerState != TaskState.None && schedulerState != TaskState.Pause) {
             throw new SchedulerException(String.format("无效的操作，当前调度器状态：%s，", schedulerState));
         }
         synchronized (schedulerLock) {
-            if (schedulerState != SchedulerState.None && schedulerState != SchedulerState.Pause) {
+            if (schedulerState != TaskState.None && schedulerState != TaskState.Pause) {
                 throw new SchedulerException(String.format("无效的操作，当前调度器状态：%s，", schedulerState));
             }
             // 备份之前的状态
-            final SchedulerState oldState = schedulerState;
+            final TaskState oldState = schedulerState;
             try {
                 // 开始初始化
-                schedulerState = SchedulerState.Initializing;
+                schedulerState = TaskState.Initializing;
                 init();
                 // 初始化完成就是运行中
-                schedulerState = SchedulerState.Running;
+                schedulerState = TaskState.Running;
             } catch (Exception e) {
                 // 异常就还原之前的状态
                 schedulerState = oldState;

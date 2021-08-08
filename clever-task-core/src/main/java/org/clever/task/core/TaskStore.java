@@ -22,12 +22,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * 调度器数据存储
+ * 定时任务调度器数据存储
  * <p>
  * 作者：lizw <br/>
  * 创建时间：2021/08/08 16:14 <br/>
  */
-public class SchedulerStore {
+public class TaskStore {
     // 数据库事务名称前缀
     private static final String TRANSACTION_NAME_PREFIX = "SCH_TX";
 
@@ -50,7 +50,7 @@ public class SchedulerStore {
     @Getter
     private final NamedParameterJdbcTemplate namedParameterJdbcTemplate;
 
-    public SchedulerStore(DataSource dataSource) {
+    public TaskStore(DataSource dataSource) {
         transactionManager = new DataSourceTransactionManager(dataSource);
         jdbcTemplate = new JdbcTemplate(dataSource);
         namedParameterJdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);

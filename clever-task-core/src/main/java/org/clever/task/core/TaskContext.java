@@ -16,17 +16,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
- * 调度器上下文
+ * 定时任务调度器上下文
  * <p>
  * 作者：lizw <br/>
  * 创建时间：2021/08/01 20:55 <br/>
  */
-public class SchedulerContext {
+public class TaskContext {
     /**
      * 对应的调度器实例
      */
     @Getter
-    private final SchedulerInstance schedulerInstance;
+    private final TaskInstance schedulerInstance;
     /**
      * 当前调度器配置
      */
@@ -61,7 +61,7 @@ public class SchedulerContext {
     @Getter
     private volatile long jobLastLoadTime = -1;
 
-    public SchedulerContext(SchedulerInstance schedulerInstance, SchedulerConfig schedulerConfig, Scheduler scheduler) {
+    public TaskContext(TaskInstance schedulerInstance, SchedulerConfig schedulerConfig, Scheduler scheduler) {
         this.schedulerInstance = schedulerInstance;
         this.schedulerConfig = schedulerConfig;
         this.currentScheduler = scheduler;
