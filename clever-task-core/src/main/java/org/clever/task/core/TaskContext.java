@@ -22,11 +22,11 @@ import java.util.stream.Collectors;
  * 创建时间：2021/08/01 20:55 <br/>
  */
 public class TaskContext {
-    /**
-     * 对应的调度器实例
-     */
-    @Getter
-    private final TaskInstance schedulerInstance;
+//    /**
+//     * 对应的调度器实例
+//     */
+//    @Getter
+//    private final TaskInstance schedulerInstance;
     /**
      * 当前调度器配置
      */
@@ -61,8 +61,8 @@ public class TaskContext {
     @Getter
     private volatile long jobLastLoadTime = -1;
 
-    public TaskContext(TaskInstance schedulerInstance, SchedulerConfig schedulerConfig, Scheduler scheduler) {
-        this.schedulerInstance = schedulerInstance;
+    public TaskContext(SchedulerConfig schedulerConfig, Scheduler scheduler) {
+//        this.schedulerInstance = schedulerInstance;
         this.schedulerConfig = schedulerConfig;
         this.currentScheduler = scheduler;
     }

@@ -12,12 +12,12 @@ import java.util.Date;
  */
 public interface JobExecutor {
     /**
-     * 是否支持执行任务类型
+     * 是否支持执行任务类型 (1：http调用，2：java调用，3：js脚本，4：shell脚本)
      */
     boolean support(int jobType);
 
     /**
-     * 定时任务执行器排序
+     * 定时任务执行器优先级(值越小越优先)
      */
     int order();
 

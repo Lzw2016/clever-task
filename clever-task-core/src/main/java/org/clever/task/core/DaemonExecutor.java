@@ -24,9 +24,13 @@ public class DaemonExecutor {
      */
     private final String name;
     /**
+     * 调度器实例名
+     */
+    private final String instanceName;
+    /**
      * 执行器线程池
      */
-    public final ScheduledExecutorService executor;
+    private final ScheduledExecutorService executor;
     /**
      * 线程池Future
      */
@@ -41,23 +45,24 @@ public class DaemonExecutor {
     @Getter
     private boolean running = false;
 
-    public DaemonExecutor(String name) {
+    public DaemonExecutor(String name, String instanceName) {
         this.name = name;
+        this.instanceName = instanceName;
         executor = Executors.newSingleThreadScheduledExecutor();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (future != null && !future.isDone() && !future.isCancelled()) {
                 try {
                     future.cancel(true);
-                    // log.info("[SchedulerInstance]-[{}] 守护线程停止成功", this.getSchedulerInstanceName());
+                    log.info("[DaemonExecutor] 线程停止成功 | name={} | instanceName={}", this.name, this.instanceName);
                 } catch (Exception e) {
-                    // log.error("[SchedulerInstance]-[{}] 守护线程停止失败", this.getSchedulerInstanceName(), e);
+                    log.error("[DaemonExecutor] 线程停止失败 | name={} | instanceName={}", this.name, this.instanceName, e);
                 }
             }
             try {
                 executor.shutdownNow();
-                // log.info("[SchedulerInstance]-[{}] 调度器线程池停止成功", this.getSchedulerInstanceName());
+                log.info("[DaemonExecutor] 线程池停止成功 | name={} | instanceName={}", this.name, this.instanceName);
             } catch (Exception e) {
-                // log.error("[SchedulerInstance]-[{}] 调度器线程池停止失败", this.getSchedulerInstanceName(), e);
+                log.error("[DaemonExecutor] 线程池停止失败 | name={} | instanceName={}", this.name, this.instanceName, e);
             }
         }));
     }
@@ -75,18 +80,18 @@ public class DaemonExecutor {
         future = executor.scheduleAtFixedRate(() -> run(command), INITIAL_DELAY, period, TimeUnit.MILLISECONDS);
     }
 
-    /**
-     * 以固定延时定期执行任务
-     *
-     * @param command 任务逻辑
-     * @param delay   固定延时时间(单位：毫秒)
-     */
-    public void scheduleWithFixedDelay(final Runnable command, final long delay) {
-        Assert.notNull(command, "参数command不能为空");
-        Assert.isTrue(delay > 0, "参数delay值必须大于0");
-        stop();
-        future = executor.scheduleWithFixedDelay(() -> run(command), INITIAL_DELAY, delay, TimeUnit.MILLISECONDS);
-    }
+//    /**
+//     * 以固定延时定期执行任务
+//     *
+//     * @param command 任务逻辑
+//     * @param delay   固定延时时间(单位：毫秒)
+//     */
+//    public void scheduleWithFixedDelay(final Runnable command, final long delay) {
+//        Assert.notNull(command, "参数command不能为空");
+//        Assert.isTrue(delay > 0, "参数delay值必须大于0");
+//        stop();
+//        future = executor.scheduleWithFixedDelay(() -> run(command), INITIAL_DELAY, delay, TimeUnit.MILLISECONDS);
+//    }
 
     /**
      * 停止守护线程调度执行
@@ -99,18 +104,22 @@ public class DaemonExecutor {
 
     private void run(final Runnable command) {
         if (running) {
-            // log.debug("[SchedulerInstance]-[{}] 守护线程正在运行，等待...", this.getSchedulerInstanceName());
+            log.debug("[DaemonExecutor] 守护线程正在运行，等待... | name={} | instanceName={}", this.name, this.instanceName);
             return;
         }
         synchronized (lock) {
             if (running) {
-                // log.debug("[SchedulerInstance]-[{}] 守护线程正在运行，等待...", this.getSchedulerInstanceName());
+                log.debug("[DaemonExecutor] 守护线程正在运行，等待... | name={} | instanceName={}", this.name, this.instanceName);
                 return;
             }
             running = true;
             try {
+                final long startTime = System.currentTimeMillis();
                 command.run();
-                // } catch (Exception e) {
+                final long endTime = System.currentTimeMillis();
+                log.debug("[DaemonExecutor] 守护线程完成，耗时：{}ms | name={} | instanceName={}", (endTime - startTime), this.name, this.instanceName);
+            } catch (Exception e) {
+                log.error("[DaemonExecutor] 守护线程异常 | name={} | instanceName={}", this.name, this.instanceName, e);
             } finally {
                 running = false;
             }
