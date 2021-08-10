@@ -28,7 +28,6 @@ public class TaskInstance {
     private static final String CALC_NEXT_FIRE_TIME_DAEMON_NAME = "校准触发器触发时间";
     private static final String HEARTBEAT_DAEMON_NAME = "心跳保持";
     private static final String RELOAD_SCHEDULER_DAEMON_NAME = "加载调度器";
-    private static final String RELOAD_JOB_DAEMON_NAME = "加载定时任务";
     private static final String RELOAD_NEXT_TRIGGER_DAEMON_NAME = "加载将要触发的触发器";
     private static final String TRIGGER_JOB_EXEC_DAEMON_NAME = "调度器轮询任务";
 
@@ -474,7 +473,7 @@ public class TaskInstance {
                 continue;
             }
             try {
-                schedulerWorker.execute(() -> executeJobTrigger(dbNow, jobTrigger));
+                schedulerWorker.execute(() -> doTriggerJobExec(dbNow, jobTrigger));
                 log.debug(
                         "[TaskInstance] JobTrigger触发完成 | id={} name={} | instanceName={}",
                         jobTrigger.getId(),
@@ -497,8 +496,10 @@ public class TaskInstance {
         log.debug("[TaskInstance] 定时任务触发线程完成 | 耗时：{}ms | instanceName={}", (endTime - startTime), this.getInstanceName());
     }
 
-    // 执行任务触发器
-    private void executeJobTrigger(final Date dbNow, final JobTrigger jobTrigger) {
+    /**
+     * 触发定时任务逻辑
+     */
+    private void doTriggerJobExec(final Date dbNow, final JobTrigger jobTrigger) {
         try {
             final Job job = taskStore.beginReadOnlyTX(status -> taskStore.getJob(jobTrigger.getNamespace(), jobTrigger.getJobId()));
             if (job == null) {
@@ -591,6 +592,7 @@ public class TaskInstance {
                 }
                 // 执行定时任务
                 if (needRunJob) {
+                    // 执行任务
                     jobWorker.execute(() -> executeJob(dbNow, job));
                 }
                 // 计算下一次触发时间
@@ -620,8 +622,17 @@ public class TaskInstance {
         }
     }
 
+    /**
+     * 执行定时任务逻辑
+     */
     private void executeJob(final Date dbNow, final Job job) {
         try {
+            final int jobRunCount = taskContext.incrementJobRunCount(job.getId());
+            // 控制重入执行
+            if (jobRunCount > Math.max(job.getMaxReentry(), 0)) {
+                // TODO 最大重入执行数量
+                return;
+            }
             final int maxRetryCount = Math.max(job.getMaxRetryCount(), 1);
             int retryCount = 0;
             while (retryCount < maxRetryCount) {
@@ -652,9 +663,13 @@ public class TaskInstance {
             );
         } finally {
             // TODO 任务执行事件处理
+            final int jobRunCount = taskContext.decrementJobRunCount(job.getId());
         }
     }
 
+    /**
+     * 运行定时任务
+     */
     private void runJob(final Date dbNow, final Job job) {
         log.info("#### ---> 模拟执行定时任务 | name={} | time={}", job.getName(), DateTimeUtils.formatToString(dbNow, "HH:mm:ss.SSS"));
         JobExecutor jobExecutor = null;
@@ -672,7 +687,9 @@ public class TaskInstance {
 
     // ---------------------------------------------------------------------------------------------------------------------------------------- support
 
-    // SchedulerConfig 转换成 Scheduler
+    /**
+     * SchedulerConfig 转换成 Scheduler
+     */
     private Scheduler toScheduler(SchedulerConfig schedulerConfig) {
         Scheduler.Config config = new Scheduler.Config();
         config.setSchedulerExecutorPoolSize(schedulerConfig.getSchedulerExecutorPoolSize());

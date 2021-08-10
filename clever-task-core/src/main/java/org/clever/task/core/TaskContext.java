@@ -21,11 +21,6 @@ import java.util.stream.Collectors;
  * 创建时间：2021/08/01 20:55 <br/>
  */
 public class TaskContext {
-//    /**
-//     * 对应的调度器实例
-//     */
-//    @Getter
-//    private final TaskInstance schedulerInstance;
     /**
      * 当前调度器配置
      */
@@ -49,10 +44,9 @@ public class TaskContext {
     /**
      * 当前节点任务运行的数量计数 {@code ConcurrentMap<jobId, jobRunCount>}
      */
-    private final ConcurrentMap<Long, AtomicInteger> jobRunCount = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Long, AtomicInteger> jobRunCountMap = new ConcurrentHashMap<>();
 
     public TaskContext(SchedulerConfig schedulerConfig, Scheduler scheduler) {
-//        this.schedulerInstance = schedulerInstance;
         this.schedulerConfig = schedulerConfig;
         this.currentScheduler = scheduler;
     }
@@ -70,7 +64,7 @@ public class TaskContext {
         return nextJobTriggerMap.values().stream().sorted(Comparator.comparing(JobTrigger::getNextFireTime)).collect(Collectors.toList());
     }
 
-    public void removeNextJobTrigger(long jobTriggerId) {
+    public void removeNextJobTrigger(Long jobTriggerId) {
         nextJobTriggerMap.remove(jobTriggerId);
     }
 
@@ -79,6 +73,18 @@ public class TaskContext {
     }
 
     public int getJobRunCount(Long jobId) {
-        return jobRunCount.computeIfAbsent(jobId, id -> new AtomicInteger(0)).get();
+        return jobRunCountMap.computeIfAbsent(jobId, id -> new AtomicInteger(0)).get();
+    }
+
+    public int incrementJobRunCount(Long jobId) {
+        return jobRunCountMap.computeIfAbsent(jobId, id -> new AtomicInteger(0)).incrementAndGet();
+    }
+
+    public int decrementJobRunCount(Long jobId) {
+        return jobRunCountMap.computeIfAbsent(jobId, id -> new AtomicInteger(0)).decrementAndGet();
+    }
+
+    public void removeJobRunCount(Long jobId) {
+        jobRunCountMap.remove(jobId);
     }
 }

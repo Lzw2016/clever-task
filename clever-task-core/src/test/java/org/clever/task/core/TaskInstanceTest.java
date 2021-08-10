@@ -4,9 +4,13 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.clever.task.core.config.SchedulerConfig;
+import org.clever.task.core.cron.CronExpression;
+import org.clever.task.core.cron.CronExpressionUtil;
 import org.junit.jupiter.api.Test;
 
+import java.text.ParseException;
 import java.util.Collections;
+import java.util.Date;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -88,5 +92,30 @@ public class TaskInstanceTest {
                     0, 10 * i, TimeUnit.MILLISECONDS);
         }
         Thread.sleep(1000 * 10);
+    }
+
+    @Test
+    public void t903() {
+        final String cronExpression = "0 0/5 * * * ? *";
+        final Date now = new Date();
+        final long startTime = System.currentTimeMillis();
+        for (int i = 0; i < 10000; i++) {
+            CronExpressionUtil.getNextTime(cronExpression, now);
+        }
+        final long endTime = System.currentTimeMillis();
+        log.info("--> {}", (endTime - startTime));
+    }
+
+    @Test
+    public void t904() throws ParseException {
+        final String cron = "0 0/5 * * * ? *";
+        final Date now = new Date();
+        CronExpression cronExpression = new CronExpression(cron);
+        final long startTime = System.currentTimeMillis();
+        for (int i = 0; i < 10000; i++) {
+            cronExpression.getNextValidTimeAfter(now);
+        }
+        final long endTime = System.currentTimeMillis();
+        log.info("--> {}", (endTime - startTime));
     }
 }
