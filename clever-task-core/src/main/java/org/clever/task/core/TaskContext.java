@@ -76,11 +76,11 @@ public class TaskContext {
         return jobRunCountMap.computeIfAbsent(jobId, id -> new AtomicInteger(0)).get();
     }
 
-    public int incrementJobRunCount(Long jobId) {
-        return jobRunCountMap.computeIfAbsent(jobId, id -> new AtomicInteger(0)).incrementAndGet();
+    public int getAndIncrementJobRunCount(Long jobId) {
+        return jobRunCountMap.computeIfAbsent(jobId, id -> new AtomicInteger(0)).getAndIncrement();
     }
 
-    public int decrementJobRunCount(Long jobId) {
+    public int decrementAndGetJobRunCount(Long jobId) {
         return jobRunCountMap.computeIfAbsent(jobId, id -> new AtomicInteger(0)).decrementAndGet();
     }
 

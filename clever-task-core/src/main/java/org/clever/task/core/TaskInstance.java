@@ -627,12 +627,13 @@ public class TaskInstance {
      */
     private void executeJob(final Date dbNow, final Job job) {
         try {
-            final int jobRunCount = taskContext.incrementJobRunCount(job.getId());
+            final int jobRunCount = taskContext.getAndIncrementJobRunCount(job.getId());
             // 控制重入执行
             if (jobRunCount > Math.max(job.getMaxReentry(), 0)) {
                 // TODO 最大重入执行数量
                 return;
             }
+            // 支持重试执行任务
             final int maxRetryCount = Math.max(job.getMaxRetryCount(), 1);
             int retryCount = 0;
             while (retryCount < maxRetryCount) {
@@ -663,7 +664,7 @@ public class TaskInstance {
             );
         } finally {
             // TODO 任务执行事件处理
-            final int jobRunCount = taskContext.decrementJobRunCount(job.getId());
+            final int jobRunCount = taskContext.decrementAndGetJobRunCount(job.getId());
         }
     }
 
