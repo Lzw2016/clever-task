@@ -35,9 +35,9 @@ public class WorkExecutor {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 executor.shutdownNow();
-                log.info("[WorkExecutor] 线程池停止成功 | {} | {}", this.name, this.instanceName);
+                log.info("[WorkExecutor] 线程池停止成功 | {} | instanceName={}", this.name, this.instanceName);
             } catch (Exception e) {
-                log.error("[WorkExecutor] 线程池停止失败 | {} | {}", this.name, this.instanceName, e);
+                log.error("[WorkExecutor] 线程池停止失败 | {} | instanceName={}", this.name, this.instanceName, e);
             }
         }));
     }

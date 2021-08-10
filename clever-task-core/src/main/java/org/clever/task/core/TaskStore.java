@@ -169,19 +169,19 @@ public class TaskStore {
     /**
      * 接下来N秒内需要触发的触发器列表
      */
-    public List<JobTrigger> queryNextTrigger(long nextTime, String namespace) {
+    public List<JobTrigger> queryNextTrigger(String namespace, Long nextTime) {
         return jdbcTemplate.query(
                 SqlConstant.QUERY_NEXT_TRIGGER,
                 DataClassRowMapper.newInstance(JobTrigger.class),
-                nextTime,
-                namespace
+                namespace,
+                nextTime
         );
     }
 
     /**
      * 根据 namespace jobTriggerId 查询
      */
-    public JobTrigger getTrigger(String namespace, long jobTriggerId) {
+    public JobTrigger getTrigger(String namespace, Long jobTriggerId) {
         List<JobTrigger> jobTriggerList = jdbcTemplate.query(
                 SqlConstant.GET_TRIGGER,
                 DataClassRowMapper.newInstance(JobTrigger.class),
@@ -192,6 +192,22 @@ public class TaskStore {
             return null;
         }
         return jobTriggerList.get(0);
+    }
+
+    /**
+     * 根据 namespace jobId 查询
+     */
+    public Job getJob(String namespace, Long jobId) {
+        List<Job> jobList = jdbcTemplate.query(
+                SqlConstant.GET_JOB_BY_ID,
+                DataClassRowMapper.newInstance(Job.class),
+                namespace,
+                jobId
+        );
+        if (jobList.isEmpty()) {
+            return null;
+        }
+        return jobList.get(0);
     }
 
     /**
@@ -240,7 +256,7 @@ public class TaskStore {
     /**
      * 获取触发器行级锁
      */
-    public void lockTriggerRow(String namespace, long jobTriggerId) {
+    public void lockTriggerRow(String namespace, Long jobTriggerId) {
         jdbcTemplate.queryForObject(
                 SqlConstant.LOCK_TRIGGER_ROW,
                 Long.class,
@@ -252,7 +268,7 @@ public class TaskStore {
 //    /**
 //     * 根据JobId查询脚本文件
 //     */
-//    private FileResource getFileResourceByJobId(String namespace, long jobId) {
+//    private FileResource getFileResourceByJobId(String namespace, Long jobId) {
 //        List<FileResource> jobTriggerList = jdbcTemplate.query(
 //                SqlConstant.GET_FILE_RESOURCE_BY_JOB_ID,
 //                DataClassRowMapper.newInstance(FileResource.class),

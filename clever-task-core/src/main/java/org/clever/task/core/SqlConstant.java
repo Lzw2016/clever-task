@@ -49,10 +49,10 @@ public interface SqlConstant {
     String QUERY_NEXT_TRIGGER = "" +
             "select * from job_trigger " +
             "where disable=0 " +
+            "and namespace=? " +
             "and start_time<=now(3) " +
             "and next_fire_time is not null " +
             "and unix_timestamp(next_fire_time)-unix_timestamp(now(3))<=? " +
-            "and namespace=? " +
             "order by next_fire_time";
 
     String GET_TRIGGER = "" +
@@ -112,6 +112,8 @@ public interface SqlConstant {
     String LOCK_TRIGGER_ROW = "select id from job_trigger where namespace=? and id=? for update";
 
     // ---------------------------------------------------------------------------------------------------------------------------------------- job
+
+    String GET_JOB_BY_ID = "select * from job where namespace=? and id=?";
 
     String QUERY_ALL_JOB = "select * from job where namespace=?";
 

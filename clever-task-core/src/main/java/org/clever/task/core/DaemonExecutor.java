@@ -53,16 +53,16 @@ public class DaemonExecutor {
             if (future != null && !future.isDone() && !future.isCancelled()) {
                 try {
                     future.cancel(true);
-                    log.info("[DaemonExecutor] 线程停止成功 | name={} | instanceName={}", this.name, this.instanceName);
+                    log.info("[DaemonExecutor] 线程停止成功 | {} | instanceName={}", this.name, this.instanceName);
                 } catch (Exception e) {
-                    log.error("[DaemonExecutor] 线程停止失败 | name={} | instanceName={}", this.name, this.instanceName, e);
+                    log.error("[DaemonExecutor] 线程停止失败 | {} | instanceName={}", this.name, this.instanceName, e);
                 }
             }
             try {
                 executor.shutdownNow();
-                log.info("[DaemonExecutor] 线程池停止成功 | name={} | instanceName={}", this.name, this.instanceName);
+                log.info("[DaemonExecutor] 线程池停止成功 | {} | instanceName={}", this.name, this.instanceName);
             } catch (Exception e) {
-                log.error("[DaemonExecutor] 线程池停止失败 | name={} | instanceName={}", this.name, this.instanceName, e);
+                log.error("[DaemonExecutor] 线程池停止失败 | {} | instanceName={}", this.name, this.instanceName, e);
             }
         }));
     }
@@ -104,12 +104,12 @@ public class DaemonExecutor {
 
     private void run(final Runnable command) {
         if (running) {
-            log.debug("[DaemonExecutor] 守护线程正在运行，等待... | name={} | instanceName={}", this.name, this.instanceName);
+            log.debug("[DaemonExecutor] 守护线程正在运行，等待... | {} | instanceName={}", this.name, this.instanceName);
             return;
         }
         synchronized (lock) {
             if (running) {
-                log.debug("[DaemonExecutor] 守护线程正在运行，等待... | name={} | instanceName={}", this.name, this.instanceName);
+                log.debug("[DaemonExecutor] 守护线程正在运行，等待... | {} | instanceName={}", this.name, this.instanceName);
                 return;
             }
             running = true;
@@ -117,9 +117,9 @@ public class DaemonExecutor {
                 final long startTime = System.currentTimeMillis();
                 command.run();
                 final long endTime = System.currentTimeMillis();
-                log.debug("[DaemonExecutor] 守护线程完成，耗时：{}ms | name={} | instanceName={}", (endTime - startTime), this.name, this.instanceName);
+                log.debug("[DaemonExecutor] 守护线程完成，耗时：{}ms | {} | instanceName={}", (endTime - startTime), this.name, this.instanceName);
             } catch (Exception e) {
-                log.error("[DaemonExecutor] 守护线程异常 | name={} | instanceName={}", this.name, this.instanceName, e);
+                log.error("[DaemonExecutor] 守护线程异常 | {} | instanceName={}", this.name, this.instanceName, e);
             } finally {
                 running = false;
             }

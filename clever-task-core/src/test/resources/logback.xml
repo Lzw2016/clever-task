@@ -11,7 +11,8 @@
 
     <!--自定义日志级别-->
     <logger name="org.clever.graaljs" level="INFO"/>
-    <logger name="com.jzt.dynamic.metrics.SchedulerInstance" level="INFO"/>
+    <logger name="org.clever.task.core.TaskInstance" level="INFO"/>
+    <logger name="org.clever.task.core.DaemonExecutor" level="INFO"/>
     <logger name="org.springframework" level="INFO"/>
     <logger name="com.zaxxer.hikari" level="INFO"/>
     <!--<logger name="org.springframework.jdbc.core.JdbcTemplate" level="DEBUG"/>-->
