@@ -65,7 +65,7 @@ public interface SqlConstant {
     String COUNT_INVALID_TRIGGER = "" +
             "select count(1) from job_trigger " +
             "where disable=0 " +
-            "and ((type=2 and fixed_interval<=0) or (type=3 and delay_time<=0)) " +
+            "and (type=2 and fixed_interval<=0) " +
             "and namespace=?";
 
     // 更新无效的触发器配置 -> type=2|3 更新 next_fire_time=null
@@ -73,7 +73,7 @@ public interface SqlConstant {
             "update job_trigger set next_fire_time=null " +
             "where disable=0 " +
             "and next_fire_time is not null " +
-            "and ((type=2 and fixed_interval<=0) or (type=3 and delay_time<=0)) " +
+            "and (type=2 and fixed_interval<=0) " +
             "and namespace=?";
 
     // 更新触发器下一次触发时间 -> type=2 更新 next_fire_time
