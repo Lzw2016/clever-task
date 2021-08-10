@@ -47,7 +47,7 @@ public class TaskInstance {
     // 接下来N秒内需要触发的触发器列表(N = heartbeatInterval * NEXT_TRIGGER_N)
     private static final int NEXT_TRIGGER_N = 2;
     // 调度器轮询任务的时间间隔(单位：毫秒)
-    private static final int TRIGGER_JOB_EXEC_INTERVAL = 30;
+    private static final int TRIGGER_JOB_EXEC_INTERVAL = 10;
 
     /**
      * 调度器数据存储对象

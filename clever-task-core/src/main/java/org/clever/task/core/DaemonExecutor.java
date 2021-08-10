@@ -104,12 +104,12 @@ public class DaemonExecutor {
 
     private void run(final Runnable command) {
         if (running) {
-            log.debug("[DaemonExecutor] 守护线程正在运行，等待... | {} | instanceName={}", this.name, this.instanceName);
+            log.warn("[DaemonExecutor] 守护线程正在运行，等待... | {} | instanceName={}", this.name, this.instanceName);
             return;
         }
         synchronized (lock) {
             if (running) {
-                log.debug("[DaemonExecutor] 守护线程正在运行，等待... | {} | instanceName={}", this.name, this.instanceName);
+                log.warn("[DaemonExecutor] 守护线程正在运行，等待... | {} | instanceName={}", this.name, this.instanceName);
                 return;
             }
             running = true;
