@@ -52,12 +52,6 @@ public class JobTriggerUtils {
                 }
                 nextFireTime = new Date(calcStartTime.getTime() + (jobTrigger.getFixedInterval() * 1000));
                 break;
-            case EnumConstant.JOB_TRIGGER_TYPE_3:
-                // 固定延时触发 TODO 暂不支持固定延时触发
-                if (jobTrigger.getDelayTime() == null || jobTrigger.getDelayTime() <= 0) {
-                    throw new SchedulerException(String.format("任务触发器delayTime字段值错误，JobTrigger(id=%s)", jobTrigger.getId()));
-                }
-                throw new SchedulerException(String.format("暂不支持固定延时触发，JobTrigger(id=%s)", jobTrigger.getId()));
             default:
                 throw new SchedulerException(String.format("任务触发器type字段值错误，JobTrigger(id=%s)", jobTrigger.getId()));
         }
@@ -103,12 +97,6 @@ public class JobTriggerUtils {
                 nextFireTime = dbNow.compareTo(jobTrigger.getNextFireTime()) > 0 ? dbNow : jobTrigger.getNextFireTime();
                 nextFireTime = new Date(nextFireTime.getTime() + (jobTrigger.getFixedInterval() * 1000));
                 break;
-            case EnumConstant.JOB_TRIGGER_TYPE_3:
-                // 固定延时触发 TODO 暂不支持固定延时触发
-                if (jobTrigger.getDelayTime() == null || jobTrigger.getDelayTime() <= 0) {
-                    throw new SchedulerException(String.format("任务触发器delayTime字段值错误，JobTrigger(id=%s)", jobTrigger.getId()));
-                }
-                throw new SchedulerException(String.format("暂不支持固定延时触发，JobTrigger(id=%s)", jobTrigger.getId()));
             default:
                 throw new SchedulerException(String.format("任务触发器type字段值错误，JobTrigger(id=%s)", jobTrigger.getId()));
         }

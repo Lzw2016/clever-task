@@ -47,7 +47,7 @@ public class TaskInstance {
     // 接下来N秒内需要触发的触发器列表(N = heartbeatInterval * NEXT_TRIGGER_N)
     private static final int NEXT_TRIGGER_N = 2;
     // 调度器轮询任务的时间间隔(单位：毫秒)
-    private static final int TRIGGER_JOB_EXEC_INTERVAL = 50;
+    private static final int TRIGGER_JOB_EXEC_INTERVAL = 30;
 
     /**
      * 调度器数据存储对象
@@ -429,7 +429,6 @@ public class TaskInstance {
         } else {
             log.info("[TaskInstance] 触发器配置检查完成，无异常触发器 | instanceName={}", this.getInstanceName());
         }
-        // 更新触发器下一次触发时间 -> type=3 TODO 暂不支持固定延时触发 type=3
     }
 
     /**

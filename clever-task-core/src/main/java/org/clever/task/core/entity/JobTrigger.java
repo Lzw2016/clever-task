@@ -64,7 +64,7 @@ public class JobTrigger implements Serializable {
     private Integer state;
 
     /**
-     * 任务类型，1：cron触发，2：固定速率触发，3：固定延时触发
+     * 任务类型，1：cron触发，2：固定速率触发
      */
     private Integer type;
 
@@ -77,11 +77,6 @@ public class JobTrigger implements Serializable {
      * 固定速率触发，间隔时间(单位：秒)
      */
     private Long fixedInterval;
-
-    /**
-     * 固定延时触发，延时时间(单位：秒)
-     */
-    private Long delayTime;
 
     /**
      * 是否禁用：0-启用，1-禁用

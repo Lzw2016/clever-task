@@ -6,17 +6,13 @@ package org.clever.task.core.entity;
  */
 public interface EnumConstant {
     /**
-     * 任务类型，1：cron触发，2：固定速率触发，3：固定延时触发
+     * 任务类型，1：cron触发，2：固定速率触发
      */
     int JOB_TRIGGER_TYPE_1 = 1;
     /**
-     * 任务类型，1：cron触发，2：固定速率触发，3：固定延时触发
+     * 任务类型，1：cron触发，2：固定速率触发
      */
     int JOB_TRIGGER_TYPE_2 = 2;
-    /**
-     * 任务类型，1：cron触发，2：固定速率触发，3：固定延时触发
-     */
-    int JOB_TRIGGER_TYPE_3 = 3;
 
     /**
      * 错过触发策略，1：忽略，2：立即补偿触发一次
