@@ -834,7 +834,7 @@ public class TaskInstance {
             }
             final long endTime = System.currentTimeMillis();
             jobLog.setRunTime((int) (endTime - startTime));
-            // TODO jobLog.setAfterJobData();
+            jobLog.setAfterJobData(job.getJobData());
         } catch (Exception e) {
             log.error(
                     "[TaskInstance] Job执行失败 | id={} name={} | instanceName={}",
