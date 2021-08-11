@@ -50,7 +50,14 @@ public class TaskInstanceTest {
     @Test
     public void t01() throws InterruptedException {
         HikariDataSource dataSource = newDataSource();
-        TaskInstance taskInstance = new TaskInstance(dataSource, newSchedulerConfig(), Collections.emptyList());
+        TaskInstance taskInstance = new TaskInstance(
+                dataSource,
+                newSchedulerConfig(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList()
+        );
         taskInstance.start();
         Thread.sleep(1000 * 60 * 2);
         Runtime.getRuntime().addShutdownHook(new Thread(dataSource::close));

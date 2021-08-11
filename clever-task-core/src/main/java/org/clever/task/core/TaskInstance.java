@@ -3,11 +3,11 @@ package org.clever.task.core;
 import lombok.extern.slf4j.Slf4j;
 import org.clever.task.core.config.SchedulerConfig;
 import org.clever.task.core.cron.CronExpressionUtil;
-import org.clever.task.core.entity.EnumConstant;
-import org.clever.task.core.entity.Job;
-import org.clever.task.core.entity.JobTrigger;
-import org.clever.task.core.entity.Scheduler;
+import org.clever.task.core.entity.*;
 import org.clever.task.core.exception.SchedulerException;
+import org.clever.task.core.listeners.JobListener;
+import org.clever.task.core.listeners.JobTriggerListener;
+import org.clever.task.core.listeners.SchedulerListener;
 import org.clever.task.core.utils.DateTimeUtils;
 import org.clever.task.core.utils.JacksonMapper;
 import org.clever.task.core.utils.JobTriggerUtils;
@@ -106,8 +106,36 @@ public class TaskInstance {
      * 定时任务执行器实现列表
      */
     private final List<JobExecutor> jobExecutors;
+    /**
+     * 调度器事件监听器列表
+     */
+    private final List<SchedulerListener> schedulerListeners;
+    /**
+     * 触发器事件监听器列表
+     */
+    private final List<JobTriggerListener> jobTriggerListeners;
+    /**
+     * 定时任务执行事件监听器列表
+     */
+    private final List<JobListener> jobListeners;
 
-    public TaskInstance(DataSource dataSource, SchedulerConfig schedulerConfig, List<JobExecutor> jobExecutors) {
+    /**
+     * 创建定时任务调度器实例
+     *
+     * @param dataSource          数据源
+     * @param schedulerConfig     调度器配置
+     * @param jobExecutors        定时任务执行器实现列表
+     * @param schedulerListeners  调度器事件监听器列表
+     * @param jobTriggerListeners 触发器事件监听器列表
+     * @param jobListeners        定时任务执行事件监听器列表
+     */
+    public TaskInstance(
+            DataSource dataSource,
+            SchedulerConfig schedulerConfig,
+            List<JobExecutor> jobExecutors,
+            List<SchedulerListener> schedulerListeners,
+            List<JobTriggerListener> jobTriggerListeners,
+            List<JobListener> jobListeners) {
         // 初始化数据源
         taskStore = new TaskStore(dataSource);
         // 注册调度器
@@ -145,6 +173,10 @@ public class TaskInstance {
             this.jobExecutors.forEach(jobExecutor -> sb.append("\n").append(jobExecutor.getClass().getName()));
             log.info("[TaskInstance] 定时任务执行器实现列表顺序如下 | instanceName={} {}", schedulerConfig.getInstanceName(), sb);
         }
+        // 事件监听器
+        this.schedulerListeners = schedulerListeners;
+        this.jobTriggerListeners = jobTriggerListeners;
+        this.jobListeners = jobListeners;
     }
 
     // ---------------------------------------------------------------------------------------------------------------------------------------- api
@@ -480,6 +512,8 @@ public class TaskInstance {
                         this.getInstanceName()
                 );
             } catch (Exception e) {
+                SchedulerLog schedulerLog = new SchedulerLog();
+                // TODO 记录调度器日志(异步)
                 log.error(
                         "[TaskInstance] JobTrigger触发失败 | id={} name={} | instanceName={}",
                         jobTrigger.getId(),
@@ -487,8 +521,6 @@ public class TaskInstance {
                         this.getInstanceName(),
                         e
                 );
-            } finally {
-                // TODO 记录调度器日志(异步)
             }
         }
         final long endTime = System.currentTimeMillis();
