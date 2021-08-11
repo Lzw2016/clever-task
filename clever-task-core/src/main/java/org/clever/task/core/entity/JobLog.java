@@ -1,6 +1,7 @@
 package org.clever.task.core.entity;
 
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -13,6 +14,8 @@ import java.util.Date;
  */
 @Data
 public class JobLog implements Serializable {
+    public static final int EXCEPTION_INFO_MAX_LENGTH = 2046;
+
     /**
      * 主键id
      */
@@ -27,6 +30,11 @@ public class JobLog implements Serializable {
      * 调度器实例名称
      */
     private String instanceName;
+
+    /**
+     * 任务触发器ID
+     */
+    private Long jobTriggerId;
 
     /**
      * 任务ID
@@ -49,7 +57,7 @@ public class JobLog implements Serializable {
     private Integer runTime;
 
     /**
-     * 任务执行结果，0：成功，1：失败
+     * 任务执行结果，0：成功，1：失败，2：取消
      */
     private Integer status;
 
@@ -66,7 +74,7 @@ public class JobLog implements Serializable {
     /**
      * 执行次数
      */
-    private Integer runCount;
+    private Long runCount;
 
     /**
      * 执行前的任务数据
@@ -82,4 +90,8 @@ public class JobLog implements Serializable {
      * 创建时间
      */
     private Date createAt;
+
+    public void setExceptionInfo(String exceptionInfo) {
+        this.exceptionInfo = StringUtils.truncate(exceptionInfo, EXCEPTION_INFO_MAX_LENGTH);
+    }
 }

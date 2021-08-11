@@ -5,6 +5,7 @@ import org.clever.task.core.entity.Job;
 import org.clever.task.core.entity.JobTrigger;
 import org.clever.task.core.entity.Scheduler;
 import org.clever.task.core.exception.SchedulerException;
+import org.clever.task.core.model.SchedulerInfo;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
@@ -133,6 +134,17 @@ public class TaskStore {
         return jdbcTemplate.query(
                 SqlConstant.QUERY_AVAILABLE_SCHEDULER,
                 DataClassRowMapper.newInstance(Scheduler.class),
+                namespace
+        );
+    }
+
+    /**
+     * 所有调度器
+     */
+    public List<SchedulerInfo> queryAllSchedulerList(String namespace) {
+        return jdbcTemplate.query(
+                SqlConstant.QUERY_ALL_SCHEDULER,
+                DataClassRowMapper.newInstance(SchedulerInfo.class),
                 namespace
         );
     }

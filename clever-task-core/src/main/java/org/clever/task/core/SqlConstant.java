@@ -35,6 +35,13 @@ public interface SqlConstant {
             "and last_heartbeat_time is not null " +
             "and (heartbeat_interval * 2) > ((unix_timestamp(now(3)) - unix_timestamp(last_heartbeat_time)) * 1000)";
 
+    String QUERY_ALL_SCHEDULER = "" +
+            "select " +
+            "  *, " +
+            "  (heartbeat_interval * 2) > ((unix_timestamp(now(3)) - unix_timestamp(ifnull(last_heartbeat_time, 0))) * 1000) as available " +
+            "from scheduler " +
+            "where namespace=? ";
+
     // ---------------------------------------------------------------------------------------------------------------------------------------- job_trigger
 
     String QUERY_ENABLE_TRIGGER = "select * from job_trigger " +
@@ -51,6 +58,7 @@ public interface SqlConstant {
             "where disable=0 " +
             "and namespace=? " +
             "and start_time<=now(3) " +
+            "and (end_time is null or end_time>=now(3)) " +
             "and next_fire_time is not null " +
             "and unix_timestamp(next_fire_time)-unix_timestamp(now(3))<=? " +
             "order by next_fire_time";

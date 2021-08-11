@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 /**
@@ -42,9 +43,18 @@ public class TaskContext {
      */
     private volatile ConcurrentMap<Long, JobTrigger> nextJobTriggerMap;
     /**
-     * 当前节点任务运行的数量计数 {@code ConcurrentMap<jobId, jobRunCount>}
+     * 当前节点任务运行的重入执行次数 {@code ConcurrentMap<jobId, jobReentryCount>}
      */
-    private final ConcurrentMap<Long, AtomicInteger> jobRunCountMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Long, AtomicInteger> jobReentryCountMap = new ConcurrentHashMap<>();
+    /**
+     * 当前节点触发器触发次数计数 {@code ConcurrentMap<jobTriggerId, fireCount>}
+     */
+    private final ConcurrentMap<Long, AtomicLong> jobTriggerFireCountMap = new ConcurrentHashMap<>();
+    /**
+     * 当前节点任务运行的总次数 {@code ConcurrentMap<jobId, jobRunCount>}
+     */
+    private final ConcurrentMap<Long, AtomicLong> jobRunCountMap = new ConcurrentHashMap<>();
+
 
     public TaskContext(SchedulerConfig schedulerConfig, Scheduler scheduler) {
         this.schedulerConfig = schedulerConfig;
@@ -72,16 +82,32 @@ public class TaskContext {
         nextJobTriggerMap.put(jobTrigger.getId(), jobTrigger);
     }
 
-    public int getJobRunCount(Long jobId) {
-        return jobRunCountMap.computeIfAbsent(jobId, id -> new AtomicInteger(0)).get();
+    public int getJobReentryCount(Long jobId) {
+        return jobReentryCountMap.computeIfAbsent(jobId, id -> new AtomicInteger(0)).get();
     }
 
-    public int getAndIncrementJobRunCount(Long jobId) {
-        return jobRunCountMap.computeIfAbsent(jobId, id -> new AtomicInteger(0)).getAndIncrement();
+    public int getAndIncrementJobReentryCount(Long jobId) {
+        return jobReentryCountMap.computeIfAbsent(jobId, id -> new AtomicInteger(0)).getAndIncrement();
     }
 
-    public int decrementAndGetJobRunCount(Long jobId) {
-        return jobRunCountMap.computeIfAbsent(jobId, id -> new AtomicInteger(0)).decrementAndGet();
+    public void decrementAndGetJobReentryCount(Long jobId) {
+        jobReentryCountMap.computeIfAbsent(jobId, id -> new AtomicInteger(0)).decrementAndGet();
+    }
+
+    public void removeJobReentryCount(Long jobId) {
+        jobReentryCountMap.remove(jobId);
+    }
+
+    public long incrementAndGetJobFireCount(Long jobTriggerId) {
+        return jobTriggerFireCountMap.computeIfAbsent(jobTriggerId, id -> new AtomicLong(0)).incrementAndGet();
+    }
+
+    public void removeJobFireCount(Long jobTriggerId) {
+        jobReentryCountMap.remove(jobTriggerId);
+    }
+
+    public long incrementAndGetJobRunCount(Long jobId) {
+        return jobRunCountMap.computeIfAbsent(jobId, id -> new AtomicLong(0)).incrementAndGet();
     }
 
     public void removeJobRunCount(Long jobId) {

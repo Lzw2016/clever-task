@@ -6,6 +6,24 @@ package org.clever.task.core.entity;
  */
 public interface EnumConstant {
     /**
+     * 是否是手动触发，0：系统自动触发，1：用户手动触发
+     */
+    int JOB_TRIGGER_IS_MANUAL_0 = 0;
+    /**
+     * 是否是手动触发，0：系统自动触发，1：用户手动触发
+     */
+    int JOB_TRIGGER_IS_MANUAL_1 = 1;
+
+    /**
+     * 是否错过了触发，0：否，1：是
+     */
+    int JOB_TRIGGER_MIS_FIRED_0 = 0;
+    /**
+     * 是否错过了触发，0：否，1：是
+     */
+    int JOB_TRIGGER_MIS_FIRED_1 = 1;
+
+    /**
      * 任务类型，1：cron触发，2：固定速率触发
      */
     int JOB_TRIGGER_TYPE_1 = 1;
@@ -91,4 +109,17 @@ public interface EnumConstant {
      * 任务类型，1：http调用，2：java调用，3：js脚本，4：shell脚本
      */
     int JOB_TYPE_4 = 4;
+
+    /**
+     * 任务执行结果，0：成功，1：失败，2：取消
+     */
+    int JOB_LOG_STATUS_0 = 0;
+    /**
+     * 任务执行结果，0：成功，1：失败，2：取消
+     */
+    int JOB_LOG_STATUS_1 = 1;
+    /**
+     * 任务执行结果，0：成功，1：失败，2：取消
+     */
+    int JOB_LOG_STATUS_2 = 2;
 }

@@ -29,6 +29,11 @@ public class JobTriggerLog implements Serializable {
     private String instanceName;
 
     /**
+     * 任务触发器ID
+     */
+    private Long jobTriggerId;
+
+    /**
      * 任务ID
      */
     private Long jobId;
@@ -61,7 +66,7 @@ public class JobTriggerLog implements Serializable {
     /**
      * 触发次数
      */
-    private Integer runCount;
+    private Long fireCount;
 
     /**
      * 是否错过了触发，0：否，1：是
@@ -77,4 +82,6 @@ public class JobTriggerLog implements Serializable {
      * 创建时间
      */
     private Date createAt;
+
+
 }

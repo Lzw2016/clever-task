@@ -20,13 +20,57 @@ public class SchedulerLog implements Serializable {
      */
     public static final String EVENT_DATA_CHECK_ERROR = "data_check_error";
     /**
+     * 调度器节点注册失败
+     */
+    public static final String EVENT_REGISTER_SCHEDULER_ERROR = "register_scheduler_error";
+    /**
      * 校准触发器触发时间失败
      */
     public static final String EVENT_CALC_NEXT_FIRE_TIME_ERROR = "calc_next_fire_time_error";
     /**
+     * 心跳保持失败
+     */
+    public static final String EVENT_HEART_BEAT_ERROR = "heart_beat_error";
+    /**
+     * 维护当前集群可用的调度器列表失败
+     */
+    public static final String EVENT_RELOAD_SCHEDULER_ERROR = "reload_scheduler_error";
+    /**
+     * 维护接下来N秒内需要触发的触发器列表失败
+     */
+    public static final String EVENT_RELOAD_NEXT_TRIGGER_ERROR = "reload_next_trigger_error";
+    /**
+     * 调度器轮询任务失败
+     */
+    public static final String EVENT_TRIGGER_JOB_EXEC_ERROR = "trigger_job_exec_error";
+    /**
      * 校准触发器触发时间过程中，计算cron表达式下次触发时间失败
      */
-    public static final String EVENT_CALC_Cron_NEXT_FIRE_TIME_ERROR = "calc_cron_next_fire_time_error";
+    public static final String EVENT_CALC_CRON_NEXT_FIRE_TIME_ERROR = "calc_cron_next_fire_time_error";
+    /**
+     * JobTrigger触发失败
+     */
+    public static final String EVENT_TRIGGER_JOB_EXEC_ITEM_ERROR = "trigger_job_exec_item_error";
+    /**
+     * JobTrigger触发器触发失败
+     */
+    public static final String EVENT_JOB_TRIGGER_FIRE_ERROR = "job_trigger_fire_error";
+    /**
+     * 调度器启动成功
+     */
+    public static final String EVENT_STARTED = "started";
+    /**
+     * 调度器启动失败
+     */
+    public static final String EVENT_STARTED_ERROR = "started_error";
+    /**
+     * 调度器暂停成功
+     */
+    public static final String EVENT_PAUSED = "paused";
+    /**
+     * 调度器暂停失败
+     */
+    public static final String EVENT_PAUSED_ERROR = "paused_error";
 
     /**
      * 编号

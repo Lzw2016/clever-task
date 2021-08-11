@@ -67,7 +67,7 @@ public class JobTriggerUtils {
      *
      * @param dbNow      数据库当前时间
      * @param jobTrigger 触发器配置
-     * @return 等于null：已经结束，<br/>
+     * @return 等于null：已经结束，<br/>非null：下一次触发时间
      */
     public static Date getNextFireTime(final Date dbNow, final JobTrigger jobTrigger) {
         if (jobTrigger.getType() == null) {
@@ -108,5 +108,36 @@ public class JobTriggerUtils {
             nextFireTime = new Date(nextFireTime.getTime() - (nextFireTime.getTime() % 1000));
         }
         return nextFireTime;
+    }
+
+    /**
+     * 判断是否错过了触发
+     */
+    public static boolean isMisFire(final Date dbNow, final JobTrigger jobTrigger) {
+        final Date startTime = jobTrigger.getNextFireTime();
+        Date nextFireTime;
+        switch (jobTrigger.getType()) {
+            case EnumConstant.JOB_TRIGGER_TYPE_1:
+                // cron触发
+                if (StringUtils.isBlank(jobTrigger.getCron())) {
+                    throw new SchedulerException(String.format("任务触发器cron字段不能为空，JobTrigger(id=%s)", jobTrigger.getId()));
+                }
+                try {
+                    nextFireTime = CronExpressionUtil.getNextTime(jobTrigger.getCron(), startTime);
+                } catch (Exception e) {
+                    throw new SchedulerException(String.format("任务触发器cron字段值错误，JobTrigger(id=%s)", jobTrigger.getId()), e);
+                }
+                break;
+            case EnumConstant.JOB_TRIGGER_TYPE_2:
+                // 固定速率触发
+                if (jobTrigger.getFixedInterval() == null || jobTrigger.getFixedInterval() <= 0) {
+                    throw new SchedulerException(String.format("任务触发器fixedInterval字段值错误，JobTrigger(id=%s)", jobTrigger.getId()));
+                }
+                nextFireTime = new Date(startTime.getTime() + (jobTrigger.getFixedInterval() * 1000));
+                break;
+            default:
+                throw new SchedulerException(String.format("任务触发器type字段值错误，JobTrigger(id=%s)", jobTrigger.getId()));
+        }
+        return dbNow.compareTo(nextFireTime) >= 0;
     }
 }
