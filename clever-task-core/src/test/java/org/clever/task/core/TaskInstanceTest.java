@@ -59,7 +59,7 @@ public class TaskInstanceTest {
                 Collections.emptyList()
         );
         taskInstance.start();
-        Thread.sleep(1000 * 60 * 2);
+        Thread.sleep(1000 * 60 * 10);
         Runtime.getRuntime().addShutdownHook(new Thread(dataSource::close));
     }
 

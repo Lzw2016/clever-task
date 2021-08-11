@@ -1,6 +1,7 @@
 package org.clever.task.core.entity;
 
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -13,6 +14,20 @@ import java.util.Date;
  */
 @Data
 public class SchedulerLog implements Serializable {
+    public static final int LOG_DATA_MAX_LENGTH = 32767;
+    /**
+     * 数据完整性校验失败
+     */
+    public static final String EVENT_DATA_CHECK_ERROR = "data_check_error";
+    /**
+     * 校准触发器触发时间失败
+     */
+    public static final String EVENT_CALC_NEXT_FIRE_TIME_ERROR = "calc_next_fire_time_error";
+    /**
+     * 校准触发器触发时间过程中，计算cron表达式下次触发时间失败
+     */
+    public static final String EVENT_CALC_Cron_NEXT_FIRE_TIME_ERROR = "calc_cron_next_fire_time_error";
+
     /**
      * 编号
      */
@@ -42,4 +57,9 @@ public class SchedulerLog implements Serializable {
      * 创建时间
      */
     private Date createAt;
+
+    public void setEventInfo(String eventName, String logData) {
+        this.eventName = eventName;
+        this.logData = StringUtils.truncate(logData, LOG_DATA_MAX_LENGTH);
+    }
 }

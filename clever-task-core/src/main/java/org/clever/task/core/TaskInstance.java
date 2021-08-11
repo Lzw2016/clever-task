@@ -9,6 +9,7 @@ import org.clever.task.core.listeners.JobListener;
 import org.clever.task.core.listeners.JobTriggerListener;
 import org.clever.task.core.listeners.SchedulerListener;
 import org.clever.task.core.utils.DateTimeUtils;
+import org.clever.task.core.utils.ExceptionUtils;
 import org.clever.task.core.utils.JacksonMapper;
 import org.clever.task.core.utils.JobTriggerUtils;
 
@@ -223,11 +224,37 @@ public class TaskInstance {
                 // 开始初始化
                 taskState = TaskState.Initializing;
                 // 1.数据完整性校验、一致性校验
-                dataCheckDaemon.scheduleAtFixedRate(this::dataCheck, DATA_CHECK_INTERVAL);
+                dataCheckDaemon.scheduleAtFixedRate(
+                        () -> {
+                            try {
+                                dataCheck();
+                            } catch (Exception e) {
+                                log.error("[TaskInstance] 数据完整性校验失败 | instanceName={}", this.getInstanceName(), e);
+                                // 记录调度器日志(异步)
+                                SchedulerLog schedulerLog = newSchedulerLog();
+                                schedulerLog.setEventInfo(SchedulerLog.EVENT_DATA_CHECK_ERROR, ExceptionUtils.getStackTraceAsString(e));
+                                schedulerWorker.execute(() -> this.schedulerStartedListener(schedulerLog));
+                            }
+                        },
+                        DATA_CHECK_INTERVAL
+                );
                 // 2.调度器节点注册
                 registerSchedulerDaemon.scheduleAtFixedRate(() -> registerScheduler(taskContext.getCurrentScheduler()), REGISTER_SCHEDULER_INTERVAL);
                 // 3.初始化触发器下一次触发时间(校准触发器触发时间)
-                calcNextFireTimeDaemon.scheduleAtFixedRate(this::calcNextFireTime, CALC_NEXT_FIRE_TIME_INTERVAL);
+                calcNextFireTimeDaemon.scheduleAtFixedRate(
+                        () -> {
+                            try {
+                                calcNextFireTime();
+                            } catch (Exception e) {
+                                log.error("[TaskInstance] 校准触发器触发时间失败 | instanceName={}", this.getInstanceName(), e);
+                                // 记录调度器日志(异步)
+                                SchedulerLog schedulerLog = newSchedulerLog();
+                                schedulerLog.setEventInfo(SchedulerLog.EVENT_CALC_NEXT_FIRE_TIME_ERROR, ExceptionUtils.getStackTraceAsString(e));
+                                schedulerWorker.execute(() -> this.schedulerStartedListener(schedulerLog));
+                            }
+                        },
+                        CALC_NEXT_FIRE_TIME_INTERVAL
+                );
                 // 1.心跳保持
                 heartbeatDaemon.scheduleAtFixedRate(this::heartbeat, scheduler.getHeartbeatInterval());
                 // 2.维护当前集群可用的调度器列表
@@ -243,6 +270,8 @@ public class TaskInstance {
                 // }
                 // 初始化完成就是运行中
                 taskState = TaskState.Running;
+
+
             } catch (Exception e) {
                 // 异常就还原之前的状态
                 taskState = oldState;
@@ -376,14 +405,14 @@ public class TaskInstance {
 //    public void queryJobs() {
 //    }
 //
-//    /**
-//     *
-//     */
-//    public void allSchedulers() {
-//    }
 
-
-    // ---------------------------------------------------------------------------------------------------------------------------------------- service
+    /**
+     * 获取所有调度器
+     */
+    public List<Scheduler> allSchedulers() {
+        // TODO 所有调度器
+        return taskContext.getAvailableSchedulerList();
+    }
 
     // ---------------------------------------------------------------------------------------------------------------------------------------- service
 
@@ -451,8 +480,11 @@ public class TaskInstance {
                     taskStore.beginTX(status -> taskStore.updateNextFireTime(cronTrigger));
                 }
             } catch (Exception e) {
-                // TODO 记录调度器日志(异步)
                 log.error("[TaskInstance] 计算触发器下一次触发时间失败 | JobTrigger(id={}) | instanceName={}", cronTrigger.getId(), this.getInstanceName(), e);
+                // 记录调度器日志(异步)
+                SchedulerLog schedulerLog = newSchedulerLog();
+                schedulerLog.setEventInfo(SchedulerLog.EVENT_CALC_Cron_NEXT_FIRE_TIME_ERROR, ExceptionUtils.getStackTraceAsString(e));
+                schedulerWorker.execute(() -> this.schedulerStartedListener(schedulerLog));
             }
         }
         log.info("[TaskInstance] 更新触发器下一次触发时间nextFireTime字段 | 更新数量：{} | instanceName={}", updateCount, this.getInstanceName());
@@ -512,8 +544,6 @@ public class TaskInstance {
                         this.getInstanceName()
                 );
             } catch (Exception e) {
-                SchedulerLog schedulerLog = new SchedulerLog();
-                // TODO 记录调度器日志(异步)
                 log.error(
                         "[TaskInstance] JobTrigger触发失败 | id={} name={} | instanceName={}",
                         jobTrigger.getId(),
@@ -521,6 +551,8 @@ public class TaskInstance {
                         this.getInstanceName(),
                         e
                 );
+                // TODO 记录调度器日志(异步)
+                SchedulerLog schedulerLog = newSchedulerLog();
             }
         }
         final long endTime = System.currentTimeMillis();
@@ -717,6 +749,69 @@ public class TaskInstance {
 //        jobExecutor.exec(dbNow, job);
     }
 
+    // ---------------------------------------------------------------------------------------------------------------------------------------- listeners
+
+
+    /**
+     * 调度器启动完成
+     */
+    public void schedulerStartedListener(SchedulerLog schedulerLog) {
+        if (schedulerListeners == null || schedulerListeners.isEmpty()) {
+            return;
+        }
+        final Scheduler scheduler = taskContext.getCurrentScheduler();
+        for (SchedulerListener schedulerListener : schedulerListeners) {
+            if (schedulerListener == null) {
+                continue;
+            }
+            try {
+                schedulerListener.onStarted(scheduler, taskStore, schedulerLog);
+            } catch (Exception e) {
+                log.error("[TaskInstance] 调度器启动完成事件处理失败 | schedulerListener={} | instanceName={}", schedulerListener.getClass().getName(), this.getInstanceName(), e);
+            }
+        }
+    }
+
+    /**
+     * 调度器已停止
+     */
+    public void schedulerPausedListener(SchedulerLog schedulerLog) {
+        if (schedulerListeners == null || schedulerListeners.isEmpty()) {
+            return;
+        }
+        final Scheduler scheduler = taskContext.getCurrentScheduler();
+        for (SchedulerListener schedulerListener : schedulerListeners) {
+            if (schedulerListener == null) {
+                continue;
+            }
+            try {
+                schedulerListener.onPaused(scheduler, taskStore, schedulerLog);
+            } catch (Exception e) {
+                log.error("[TaskInstance] 调度器已停止事件处理失败 | schedulerListener={} | instanceName={}", schedulerListener.getClass().getName(), this.getInstanceName(), e);
+            }
+        }
+    }
+
+    /**
+     * 调度器出现错误
+     */
+    public void schedulerErrorListener(SchedulerLog schedulerLog) {
+        if (schedulerListeners == null || schedulerListeners.isEmpty()) {
+            return;
+        }
+        final Scheduler scheduler = taskContext.getCurrentScheduler();
+        for (SchedulerListener schedulerListener : schedulerListeners) {
+            if (schedulerListener == null) {
+                continue;
+            }
+            try {
+                schedulerListener.onErrorEvent(scheduler, taskStore, schedulerLog);
+            } catch (Exception e) {
+                log.error("[TaskInstance] 调度器出现错误事件处理失败 | schedulerListener={} | instanceName={}", schedulerListener.getClass().getName(), this.getInstanceName(), e);
+            }
+        }
+    }
+
     // ---------------------------------------------------------------------------------------------------------------------------------------- support
 
     /**
@@ -735,5 +830,13 @@ public class TaskInstance {
         scheduler.setConfig(JacksonMapper.getInstance().toJson(config));
         scheduler.setDescription(schedulerConfig.getDescription());
         return scheduler;
+    }
+
+    private SchedulerLog newSchedulerLog() {
+        final Scheduler scheduler = taskContext.getCurrentScheduler();
+        SchedulerLog schedulerLog = new SchedulerLog();
+        schedulerLog.setNamespace(scheduler.getNamespace());
+        schedulerLog.setInstanceName(scheduler.getInstanceName());
+        return schedulerLog;
     }
 }
