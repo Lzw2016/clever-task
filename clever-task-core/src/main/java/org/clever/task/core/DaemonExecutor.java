@@ -80,19 +80,6 @@ public class DaemonExecutor {
         future = executor.scheduleAtFixedRate(() -> run(command), INITIAL_DELAY, period, TimeUnit.MILLISECONDS);
     }
 
-//    /**
-//     * 以固定延时定期执行任务
-//     *
-//     * @param command 任务逻辑
-//     * @param delay   固定延时时间(单位：毫秒)
-//     */
-//    public void scheduleWithFixedDelay(final Runnable command, final long delay) {
-//        Assert.notNull(command, "参数command不能为空");
-//        Assert.isTrue(delay > 0, "参数delay值必须大于0");
-//        stop();
-//        future = executor.scheduleWithFixedDelay(() -> run(command), INITIAL_DELAY, delay, TimeUnit.MILLISECONDS);
-//    }
-
     /**
      * 停止守护线程调度执行
      */
