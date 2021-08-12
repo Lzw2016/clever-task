@@ -39,6 +39,7 @@ public class WorkExecutor {
                 THREAD_POOL_KEEP_ALIVE_SECONDS,
                 TimeUnit.SECONDS,
                 new LinkedBlockingQueue<>(workQueueCapacity),
+                // TODO namingPattern Mapping
                 new BasicThreadFactory.Builder().namingPattern("task-work-%d").daemon(false).build()
         );
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
