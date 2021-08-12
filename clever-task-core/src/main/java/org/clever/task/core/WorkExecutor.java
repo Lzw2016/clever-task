@@ -3,6 +3,7 @@ package org.clever.task.core;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +39,7 @@ public class WorkExecutor {
                 THREAD_POOL_KEEP_ALIVE_SECONDS,
                 TimeUnit.SECONDS,
                 new LinkedBlockingQueue<>(workQueueCapacity),
-                new BasicThreadFactory.Builder().namingPattern(name + "-%d").daemon(true).build()
+                new BasicThreadFactory.Builder().namingPattern("task-work-%d").daemon(false).build()
         );
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
@@ -52,5 +53,9 @@ public class WorkExecutor {
 
     public void execute(Runnable command) {
         executor.execute(command);
+    }
+
+    public Future<?> submit(Runnable command) {
+        return executor.submit(command);
     }
 }

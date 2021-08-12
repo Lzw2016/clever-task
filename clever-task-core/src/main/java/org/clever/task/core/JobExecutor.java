@@ -28,5 +28,5 @@ public interface JobExecutor {
      * @param dbNow 数据库当前时间
      * @param job   任务信息
      */
-    void exec(final Date dbNow, final Job job, final Scheduler scheduler, final TaskStore taskStore);
+    void exec(final Date dbNow, final Job job, final Scheduler scheduler, final TaskStore taskStore) throws Exception;
 }

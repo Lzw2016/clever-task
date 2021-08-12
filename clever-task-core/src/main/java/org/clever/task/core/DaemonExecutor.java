@@ -49,7 +49,7 @@ public class DaemonExecutor {
     public DaemonExecutor(String name, String instanceName) {
         this.name = name;
         this.instanceName = instanceName;
-        executor = Executors.newSingleThreadScheduledExecutor(new BasicThreadFactory.Builder().namingPattern(name + "-%d").daemon(true).build());
+        executor = Executors.newSingleThreadScheduledExecutor(new BasicThreadFactory.Builder().namingPattern("task-daemon-%d").daemon(true).build());
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (future != null && !future.isDone() && !future.isCancelled()) {
                 try {
