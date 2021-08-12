@@ -638,15 +638,15 @@ public class TaskInstance {
                     try {
                         doTriggerJobExec(dbNow, jobTrigger, jobTriggerLog);
                         // 是否在当前节点触发执行了任务
-                        if (jobTriggerLog.getMisFired() != null) {
-                            final long endFireTime = System.currentTimeMillis();
-                            jobTriggerLog.setTriggerTime((int) (endFireTime - startFireTime));
-                            // 触发器触发成功日志(异步)
-                            schedulerWorker.execute(() -> this.jobTriggeredListener(jobTriggerLog));
-                        } else {
-                            // 未触发成功(触发次数减1)
+                        if (jobTriggerLog.getMisFired() == null) {
+                            // 未触发 - 触发次数减1
                             taskContext.decrementAndGetJobFireCount(jobTrigger.getId());
                             jobTriggerLog.setFireCount(jobTriggerLog.getFireCount() - 1);
+                        } else {
+                            // 已触发 - 触发器触发成功日志(异步)
+                            final long endFireTime = System.currentTimeMillis();
+                            jobTriggerLog.setTriggerTime((int) (endFireTime - startFireTime));
+                            schedulerWorker.execute(() -> this.jobTriggeredListener(jobTriggerLog));
                         }
                     } catch (Exception e) {
                         log.error(
@@ -767,6 +767,7 @@ public class TaskInstance {
             }
             // 触发定时任务
             boolean needRunJob = true;
+            Date lastFireTime = currentJobTrigger.getNextFireTime();
             // 判断是否错过了触发
             final Integer misfireStrategy = jobTrigger.getMisfireStrategy();
             if (JobTriggerUtils.isMisFire(dbNow, jobTrigger)) {
@@ -781,6 +782,7 @@ public class TaskInstance {
                     case EnumConstant.JOB_TRIGGER_MISFIRE_STRATEGY_2:
                         // 立即补偿触发一次
                         needRunJob = true;
+                        lastFireTime = JobTriggerUtils.removeMillisecond(dbNow);
                         break;
                     default:
                         throw new SchedulerException(String.format("任务触发器misfireStrategy字段值错误，JobTrigger(id=%s)", jobTrigger.getId()));
@@ -795,6 +797,7 @@ public class TaskInstance {
             }
             // 计算下一次触发时间
             final Date newNextFireTime = JobTriggerUtils.getNextFireTime(dbNow, currentJobTrigger);
+            currentJobTrigger.setLastFireTime(lastFireTime);
             currentJobTrigger.setNextFireTime(newNextFireTime);
             taskStore.updateFireTime(currentJobTrigger);
             // 获取最新的JobTrigger

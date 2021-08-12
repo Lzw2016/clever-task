@@ -109,11 +109,10 @@ public interface SqlConstant {
     String UPDATE_NEXT_FIRE_TIME_TRIGGER = "" +
             "update job_trigger set next_fire_time=:nextFireTime " +
             "where id=:id " +
-            // "and (end_time is null or end_time>=now(3)) " +
             "and namespace=:namespace";
 
     String UPDATE_FIRE_TIME_TRIGGER = "" +
-            "update job_trigger set last_fire_time=next_fire_time, next_fire_time=:nextFireTime " +
+            "update job_trigger set last_fire_time=:lastFireTime, next_fire_time=:nextFireTime " +
             "where id=:id " +
             "and namespace=:namespace";
 

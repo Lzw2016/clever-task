@@ -19,6 +19,7 @@ public class JobTriggerUtils {
      * @param jobTrigger 触发器配置
      * @return 大于等于now：等待正常触发，<br/>小于now：需要补偿触发，<br/>大于endTime：触发器已结束
      */
+    @SuppressWarnings("DuplicatedCode")
     public static Date getNextFireTime(final JobTrigger jobTrigger) {
         if (jobTrigger.getStartTime() == null) {
             throw new SchedulerException(String.format("任务触发器startTime字段不能为空，JobTrigger(id=%s)", jobTrigger.getId()));
@@ -56,9 +57,7 @@ public class JobTriggerUtils {
                 throw new SchedulerException(String.format("任务触发器type字段值错误，JobTrigger(id=%s)", jobTrigger.getId()));
         }
         // 只需要精确到秒
-        if (nextFireTime != null && nextFireTime.getTime() % 1000 != 0) {
-            nextFireTime = new Date(nextFireTime.getTime() - (nextFireTime.getTime() % 1000));
-        }
+        nextFireTime = removeMillisecond(nextFireTime);
         return nextFireTime;
     }
 
@@ -104,15 +103,14 @@ public class JobTriggerUtils {
             nextFireTime = null;
         }
         // 只需要精确到秒
-        if (nextFireTime != null && nextFireTime.getTime() % 1000 != 0) {
-            nextFireTime = new Date(nextFireTime.getTime() - (nextFireTime.getTime() % 1000));
-        }
+        nextFireTime = removeMillisecond(nextFireTime);
         return nextFireTime;
     }
 
     /**
      * 判断是否错过了触发
      */
+    @SuppressWarnings("DuplicatedCode")
     public static boolean isMisFire(final Date dbNow, final JobTrigger jobTrigger) {
         final Date startTime = jobTrigger.getNextFireTime();
         Date nextFireTime;
@@ -139,5 +137,12 @@ public class JobTriggerUtils {
                 throw new SchedulerException(String.format("任务触发器type字段值错误，JobTrigger(id=%s)", jobTrigger.getId()));
         }
         return dbNow.compareTo(nextFireTime) >= 0;
+    }
+
+    public static Date removeMillisecond(Date date) {
+        if (date != null && date.getTime() % 1000 != 0) {
+            date = new Date(date.getTime() - (date.getTime() % 1000));
+        }
+        return date;
     }
 }

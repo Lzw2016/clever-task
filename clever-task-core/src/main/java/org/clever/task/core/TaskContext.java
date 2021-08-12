@@ -51,8 +51,6 @@ public class TaskContext {
      * 正在触发的触发器ID {@code Set<jobTriggerId>}
      */
     private final Set<Long> triggeringSet = Sets.newConcurrentHashSet();
-    // private final Set<Long> triggeringSet = Collections.synchronizedSet(new HashSet<>(INITIAL_CAPACITY));
-    // private final Set<Long> triggeringSet = new CopyOnWriteArraySet<>();
     /**
      * 当前节点任务运行的重入执行次数 {@code ConcurrentMap<jobId, jobReentryCount>}
      */
