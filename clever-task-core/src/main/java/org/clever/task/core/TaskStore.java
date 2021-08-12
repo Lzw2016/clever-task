@@ -9,6 +9,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 import org.springframework.transaction.support.TransactionCallback;
@@ -18,6 +19,7 @@ import org.springframework.util.Assert;
 import javax.sql.DataSource;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -296,11 +298,32 @@ public class TaskStore {
     }
 
     public int addSchedulerLog(SchedulerLog schedulerLog) {
-        return namedParameterJdbcTemplate.update(SqlConstant.ADD_SCHEDULER_LOG, new BeanPropertySqlParameterSource(schedulerLog));
+        GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+        int count = namedParameterJdbcTemplate.update(SqlConstant.ADD_SCHEDULER_LOG, new BeanPropertySqlParameterSource(schedulerLog), keyHolder);
+        schedulerLog.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
+        return count;
     }
 
     public int addJobTriggerLog(JobTriggerLog jobTriggerLog) {
-        return namedParameterJdbcTemplate.update(SqlConstant.ADD_JOB_TRIGGER_LOG, new BeanPropertySqlParameterSource(jobTriggerLog));
+        GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+        int count = namedParameterJdbcTemplate.update(SqlConstant.ADD_JOB_TRIGGER_LOG, new BeanPropertySqlParameterSource(jobTriggerLog), keyHolder);
+        jobTriggerLog.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
+        return count;
+    }
+
+    public int addJobLog(JobLog jobLog) {
+        GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+        int count = namedParameterJdbcTemplate.update(SqlConstant.ADD_JOB_LOG, new BeanPropertySqlParameterSource(jobLog), keyHolder);
+        jobLog.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
+        return count;
+    }
+
+    public int updateJobLogByEnd(JobLog jobLog) {
+        return namedParameterJdbcTemplate.update(SqlConstant.UPDATE_JOB_LOG_BY_END, new BeanPropertySqlParameterSource(jobLog));
+    }
+
+    public int updateJobLogByRetry(JobLog jobLog) {
+        return namedParameterJdbcTemplate.update(SqlConstant.UPDATE_JOB_LOG_BY_RETRY, new BeanPropertySqlParameterSource(jobLog));
     }
 
 //    /**

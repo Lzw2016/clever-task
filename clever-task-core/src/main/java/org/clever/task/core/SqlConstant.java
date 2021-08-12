@@ -143,6 +143,22 @@ public interface SqlConstant {
             "values " +
             "(:namespace, :instanceName, :jobId, :triggerName, :isManual, :triggerTime, :lastFireTime, :nextFireTime, :fireCount, :misFired, :triggerMsg)";
 
+    String ADD_JOB_LOG = "" +
+            "insert into job_log " +
+            "(namespace, instance_name, job_trigger_id, job_id, start_time, retry_count, run_count, before_job_data) " +
+            "values " +
+            "(:namespace, :instanceName, :jobTriggerId, :jobId, now(3), :retryCount, :runCount, :beforeJobData)";
+
+    String UPDATE_JOB_LOG_BY_END = "" +
+            "update job_log " +
+            "set end_time=now(3), run_time=:runTime, status=:status, exception_info=:exceptionInfo, after_job_data=:afterJobData " +
+            "where namespace=:namespace and id=:id";
+
+    String UPDATE_JOB_LOG_BY_RETRY = "" +
+            "update job_log " +
+            "set run_time=:runTime, status=:status, exception_info=:exceptionInfo, retry_count=:retryCount " +
+            "where namespace=:namespace and id=:id";
+
     // ---------------------------------------------------------------------------------------------------------------------------------------- file_resource
 
     String GET_FILE_RESOURCE_BY_JOB_ID = "" +

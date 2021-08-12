@@ -851,6 +851,8 @@ public class TaskInstance {
                             e
                     );
                     // 记录任务执行日志(同步)
+                    final long endTime = System.currentTimeMillis();
+                    jobLog.setRunTime((int) (endTime - startTime));
                     jobLog.setStatus(EnumConstant.JOB_LOG_STATUS_1);
                     jobLog.setRetryCount(retryCount);
                     jobLog.setExceptionInfo(ExceptionUtils.getStackTraceAsString(e));

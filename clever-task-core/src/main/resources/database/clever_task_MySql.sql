@@ -304,6 +304,7 @@ create table job_log
     primary key (id)
 ) comment = '任务执行日志';
 create index idx_job_log_instance_name on job_log (instance_name(31));
+create index idx_job_log_job_trigger_id on job_log (job_trigger_id);
 create index idx_job_log_job_id on job_log (job_id);
 create index idx_job_log_start_time on job_log (start_time);
 create index idx_job_log_end_time on job_log (end_time);
