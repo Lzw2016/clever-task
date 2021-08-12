@@ -643,6 +643,10 @@ public class TaskInstance {
                             jobTriggerLog.setTriggerTime((int) (endFireTime - startFireTime));
                             // 触发器触发成功日志(异步)
                             schedulerWorker.execute(() -> this.jobTriggeredListener(jobTriggerLog));
+                        } else {
+                            // 未触发成功(触发次数减1)
+                            taskContext.decrementAndGetJobFireCount(jobTrigger.getId());
+                            jobTriggerLog.setFireCount(jobTriggerLog.getFireCount() - 1);
                         }
                     } catch (Exception e) {
                         log.error(

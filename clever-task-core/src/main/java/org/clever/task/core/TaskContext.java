@@ -1,5 +1,6 @@
 package org.clever.task.core;
 
+import com.google.common.collect.Sets;
 import lombok.Getter;
 import lombok.Setter;
 import org.clever.task.core.config.SchedulerConfig;
@@ -12,7 +13,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -49,7 +49,8 @@ public class TaskContext {
     /**
      * 正在触发的触发器ID {@code Set<jobTriggerId>}
      */
-    private final Set<Long> triggeringSet = new CopyOnWriteArraySet<>();
+    private final Set<Long> triggeringSet = Sets.newConcurrentHashSet();
+    // private final Set<Long> triggeringSet = Collections.synchronizedSet(new HashSet<>(INITIAL_CAPACITY));
     /**
      * 当前节点任务运行的重入执行次数 {@code ConcurrentMap<jobId, jobReentryCount>}
      */
@@ -98,7 +99,10 @@ public class TaskContext {
     }
 
     public void decrementAndGetJobReentryCount(Long jobId) {
-        jobReentryCountMap.computeIfAbsent(jobId, id -> new AtomicInteger(0)).decrementAndGet();
+        AtomicInteger jobReentryCount = jobReentryCountMap.get(jobId);
+        if (jobReentryCount != null) {
+            jobReentryCount.decrementAndGet();
+        }
     }
 
     public void removeJobReentryCount(Long jobId) {
@@ -109,8 +113,15 @@ public class TaskContext {
         return jobTriggerFireCountMap.computeIfAbsent(jobTriggerId, id -> new AtomicLong(0)).incrementAndGet();
     }
 
+    public void decrementAndGetJobFireCount(Long jobTriggerId) {
+        AtomicLong jobFireCount = jobTriggerFireCountMap.get(jobTriggerId);
+        if (jobFireCount != null) {
+            jobFireCount.decrementAndGet();
+        }
+    }
+
     public void removeJobFireCount(Long jobTriggerId) {
-        jobReentryCountMap.remove(jobTriggerId);
+        jobTriggerFireCountMap.remove(jobTriggerId);
     }
 
     public long incrementAndGetJobRunCount(Long jobId) {
@@ -121,7 +132,7 @@ public class TaskContext {
         jobRunCountMap.remove(jobId);
     }
 
-    public boolean addTriggering(Long jobTriggerId) {
+    public synchronized boolean addTriggering(Long jobTriggerId) {
         return triggeringSet.add(jobTriggerId);
     }
 
