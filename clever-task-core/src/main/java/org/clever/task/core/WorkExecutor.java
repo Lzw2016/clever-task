@@ -1,6 +1,7 @@
 package org.clever.task.core;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -31,7 +32,14 @@ public class WorkExecutor {
     public WorkExecutor(String name, String instanceName, int poolSize, int workQueueCapacity) {
         this.name = name;
         this.instanceName = instanceName;
-        executor = new ThreadPoolExecutor(poolSize, poolSize, THREAD_POOL_KEEP_ALIVE_SECONDS, TimeUnit.SECONDS, new LinkedBlockingQueue<>(workQueueCapacity));
+        executor = new ThreadPoolExecutor(
+                poolSize,
+                poolSize,
+                THREAD_POOL_KEEP_ALIVE_SECONDS,
+                TimeUnit.SECONDS,
+                new LinkedBlockingQueue<>(workQueueCapacity),
+                new BasicThreadFactory.Builder().namingPattern(name + "-%d").daemon(true).build()
+        );
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 executor.shutdownNow();

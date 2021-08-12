@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
  * 创建时间：2021/08/01 20:55 <br/>
  */
 public class TaskContext {
+    // 集合初始容量
     private static final int INITIAL_CAPACITY = 1024;
 
     /**
@@ -51,6 +52,7 @@ public class TaskContext {
      */
     private final Set<Long> triggeringSet = Sets.newConcurrentHashSet();
     // private final Set<Long> triggeringSet = Collections.synchronizedSet(new HashSet<>(INITIAL_CAPACITY));
+    // private final Set<Long> triggeringSet = new CopyOnWriteArraySet<>();
     /**
      * 当前节点任务运行的重入执行次数 {@code ConcurrentMap<jobId, jobReentryCount>}
      */

@@ -2,6 +2,7 @@ package org.clever.task.core;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.springframework.util.Assert;
 
 import java.util.concurrent.Executors;
@@ -48,7 +49,7 @@ public class DaemonExecutor {
     public DaemonExecutor(String name, String instanceName) {
         this.name = name;
         this.instanceName = instanceName;
-        executor = Executors.newSingleThreadScheduledExecutor();
+        executor = Executors.newSingleThreadScheduledExecutor(new BasicThreadFactory.Builder().namingPattern(name + "-%d").daemon(true).build());
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (future != null && !future.isDone() && !future.isCancelled()) {
                 try {
