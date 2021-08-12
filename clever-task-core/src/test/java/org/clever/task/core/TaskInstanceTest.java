@@ -45,20 +45,19 @@ public class TaskInstanceTest {
         return new HikariDataSource(newHikariConfig());
     }
 
-    public static SchedulerConfig newSchedulerConfig() {
+    public static SchedulerConfig newSchedulerConfig(String instanceName) {
         SchedulerConfig config = new SchedulerConfig();
         config.setNamespace("lzw");
-        config.setInstanceName("n01");
+        config.setInstanceName(instanceName);
         config.setDescription("测试节点01");
         return config;
     }
 
-    @Test
-    public void t01() throws InterruptedException {
+    public static void startTaskInstance(String instanceName) throws InterruptedException {
         HikariDataSource dataSource = newDataSource();
         TaskInstance taskInstance = new TaskInstance(
                 dataSource,
-                newSchedulerConfig(),
+                newSchedulerConfig(instanceName),
                 Arrays.asList(new MockJobExecutor(), new HttpJobExecutor()),
                 Collections.singletonList(new SchedulerLogListener()),
                 Collections.singletonList(new JobTriggerLogListener()),
@@ -76,23 +75,28 @@ public class TaskInstanceTest {
     }
 
     @Test
+    public void t01() throws InterruptedException {
+        startTaskInstance("n01");
+    }
+
+    @Test
     public void t02() throws InterruptedException {
-        t01();
+        startTaskInstance("n02");
     }
 
     @Test
     public void t03() throws InterruptedException {
-        t01();
+        startTaskInstance("n03");
     }
 
     @Test
     public void t04() throws InterruptedException {
-        t01();
+        startTaskInstance("n04");
     }
 
     @Test
     public void t05() throws InterruptedException {
-        t01();
+        startTaskInstance("n05");
     }
 
     @Test
