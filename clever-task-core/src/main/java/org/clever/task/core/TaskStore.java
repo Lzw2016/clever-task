@@ -299,6 +299,10 @@ public class TaskStore {
         return namedParameterJdbcTemplate.update(SqlConstant.ADD_SCHEDULER_LOG, new BeanPropertySqlParameterSource(schedulerLog));
     }
 
+    public int addJobTriggerLog(JobTriggerLog jobTriggerLog) {
+        return namedParameterJdbcTemplate.update(SqlConstant.ADD_JOB_TRIGGER_LOG, new BeanPropertySqlParameterSource(jobTriggerLog));
+    }
+
 //    /**
 //     * 根据JobId查询脚本文件
 //     */

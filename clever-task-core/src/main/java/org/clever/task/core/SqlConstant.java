@@ -137,6 +137,12 @@ public interface SqlConstant {
             "values " +
             "(:namespace, :instanceName, :eventName, :logData)";
 
+    String ADD_JOB_TRIGGER_LOG = "" +
+            "insert into job_trigger_log " +
+            "(namespace, instance_name, job_id, trigger_name, is_manual, trigger_time, last_fire_time, next_fire_time, fire_count, mis_fired, trigger_msg) " +
+            "values " +
+            "(:namespace, :instanceName, :jobId, :triggerName, :isManual, :triggerTime, :lastFireTime, :nextFireTime, :fireCount, :misFired, :triggerMsg)";
+
     // ---------------------------------------------------------------------------------------------------------------------------------------- file_resource
 
     String GET_FILE_RESOURCE_BY_JOB_ID = "" +
