@@ -240,7 +240,7 @@ create table scheduler_log
     namespace           varchar(63)     not null                                                comment '命名空间',
     instance_name       varchar(127)    not null                                                comment '调度器实例名称',
     event_name          varchar(63)     not null                                                comment '事件名称',
-    log_data            text            not null                                                comment '事件日志数据',
+    log_data            text                                                                    comment '事件日志数据',
     create_at           datetime(3)     not null        default current_timestamp(3)            comment '创建时间',
     primary key (id)
 ) comment = '调度器事件日志';

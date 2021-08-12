@@ -71,6 +71,10 @@ public class SchedulerLog implements Serializable {
      * 调度器暂停失败
      */
     public static final String EVENT_PAUSED_ERROR = "paused_error";
+    /**
+     * 调度器停止
+     */
+    public static final String EVENT_SHUTDOWN = "shutdown";
 
     /**
      * 编号

@@ -117,13 +117,25 @@ public interface SqlConstant {
             "where id=:id " +
             "and namespace=:namespace";
 
-    String LOCK_TRIGGER_ROW = "select id from job_trigger where namespace=? and id=? for update";
+    String LOCK_TRIGGER_ROW = "select * from job_trigger where namespace=? and id=? for update";
 
     // ---------------------------------------------------------------------------------------------------------------------------------------- job
 
     String GET_JOB_BY_ID = "select * from job where namespace=? and id=?";
 
     String QUERY_ALL_JOB = "select * from job where namespace=?";
+
+    // ---------------------------------------------------------------------------------------------------------------------------------------- xxx_job
+
+    String HTTP_JOB_BY_JOB_ID = "select * from http_job where namespace=? and job_id=?";
+
+    // ---------------------------------------------------------------------------------------------------------------------------------------- xxx_log
+
+    String ADD_SCHEDULER_LOG = "" +
+            "insert into scheduler_log " +
+            "(namespace, instance_name, event_name, log_data) " +
+            "values " +
+            "(:namespace, :instanceName, :eventName, :logData)";
 
     // ---------------------------------------------------------------------------------------------------------------------------------------- file_resource
 
@@ -134,4 +146,6 @@ public interface SqlConstant {
             "where a.job_id=? " +
             "  and a.namespace=? " +
             "limit 1";
+
+
 }

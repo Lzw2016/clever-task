@@ -1,6 +1,7 @@
 package org.clever.task.core;
 
 import org.clever.task.core.entity.Job;
+import org.clever.task.core.entity.Scheduler;
 
 import java.util.Date;
 
@@ -27,5 +28,5 @@ public interface JobExecutor {
      * @param dbNow 数据库当前时间
      * @param job   任务信息
      */
-    void exec(final Date dbNow, final Job job);
+    void exec(final Date dbNow, final Job job, final Scheduler scheduler, final TaskStore taskStore);
 }

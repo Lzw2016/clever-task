@@ -1,9 +1,7 @@
 package org.clever.task.core;
 
 import lombok.Getter;
-import org.clever.task.core.entity.Job;
-import org.clever.task.core.entity.JobTrigger;
-import org.clever.task.core.entity.Scheduler;
+import org.clever.task.core.entity.*;
 import org.clever.task.core.exception.SchedulerException;
 import org.clever.task.core.model.SchedulerInfo;
 import org.springframework.jdbc.core.DataClassRowMapper;
@@ -234,6 +232,22 @@ public class TaskStore {
     }
 
     /**
+     * 获取HttpJob
+     */
+    public HttpJob getHttpJob(String namespace, Long jobId) {
+        List<HttpJob> jobList = jdbcTemplate.query(
+                SqlConstant.HTTP_JOB_BY_JOB_ID,
+                DataClassRowMapper.newInstance(HttpJob.class),
+                namespace,
+                jobId
+        );
+        if (jobList.isEmpty()) {
+            return null;
+        }
+        return jobList.get(0);
+    }
+
+    /**
      * 更新无效的触发器配置 -> type=2|3 更新 next_fire_time=null
      */
     public int updateInvalidTrigger(String namespace) {
@@ -268,13 +282,21 @@ public class TaskStore {
     /**
      * 获取触发器行级锁
      */
-    public void lockTriggerRow(String namespace, Long jobTriggerId) {
-        jdbcTemplate.queryForObject(
+    public JobTrigger lockTriggerRow(String namespace, Long jobTriggerId) {
+        List<JobTrigger> jobTriggerList = jdbcTemplate.query(
                 SqlConstant.LOCK_TRIGGER_ROW,
-                Long.class,
+                DataClassRowMapper.newInstance(JobTrigger.class),
                 namespace,
                 jobTriggerId
         );
+        if (jobTriggerList.isEmpty()) {
+            return null;
+        }
+        return jobTriggerList.get(0);
+    }
+
+    public int addSchedulerLog(SchedulerLog schedulerLog) {
+        return namedParameterJdbcTemplate.update(SqlConstant.ADD_SCHEDULER_LOG, new BeanPropertySqlParameterSource(schedulerLog));
     }
 
 //    /**

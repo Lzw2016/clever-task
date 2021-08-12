@@ -6,9 +6,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.clever.task.core.config.SchedulerConfig;
 import org.clever.task.core.cron.CronExpression;
 import org.clever.task.core.cron.CronExpressionUtil;
+import org.clever.task.core.job.HttpJobExecutor;
+import org.clever.task.core.job.MockJobExecutor;
+import org.clever.task.core.listeners.JobLogListener;
+import org.clever.task.core.listeners.JobTriggerLogListener;
+import org.clever.task.core.listeners.SchedulerLogListener;
 import org.junit.jupiter.api.Test;
 
 import java.text.ParseException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.Executors;
@@ -53,10 +59,10 @@ public class TaskInstanceTest {
         TaskInstance taskInstance = new TaskInstance(
                 dataSource,
                 newSchedulerConfig(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList()
+                Arrays.asList(new MockJobExecutor(), new HttpJobExecutor()),
+                Collections.singletonList(new SchedulerLogListener()),
+                Collections.singletonList(new JobTriggerLogListener()),
+                Collections.singletonList(new JobLogListener())
         );
         taskInstance.start();
         Thread.sleep(1000 * 60 * 10);

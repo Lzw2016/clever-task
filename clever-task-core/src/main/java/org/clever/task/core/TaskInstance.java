@@ -9,10 +9,10 @@ import org.clever.task.core.listeners.JobListener;
 import org.clever.task.core.listeners.JobTriggerListener;
 import org.clever.task.core.listeners.SchedulerListener;
 import org.clever.task.core.model.SchedulerInfo;
-import org.clever.task.core.utils.DateTimeUtils;
 import org.clever.task.core.utils.ExceptionUtils;
 import org.clever.task.core.utils.JacksonMapper;
 import org.clever.task.core.utils.JobTriggerUtils;
+import org.springframework.util.Assert;
 
 import javax.sql.DataSource;
 import java.util.*;
@@ -138,6 +138,12 @@ public class TaskInstance {
             List<SchedulerListener> schedulerListeners,
             List<JobTriggerListener> jobTriggerListeners,
             List<JobListener> jobListeners) {
+        Assert.notNull(dataSource, "参数dataSource不能为空");
+        Assert.notNull(schedulerConfig, "参数schedulerConfig不能为空");
+        Assert.notEmpty(jobExecutors, "参数jobExecutors不能为空");
+        Assert.notEmpty(schedulerListeners, "参数schedulerListeners不能为空");
+        Assert.notEmpty(jobTriggerListeners, "参数jobTriggerListeners不能为空");
+        Assert.notEmpty(jobListeners, "参数jobListeners不能为空");
         // 初始化数据源
         taskStore = new TaskStore(dataSource);
         // 注册调度器
@@ -179,6 +185,12 @@ public class TaskInstance {
         this.schedulerListeners = schedulerListeners;
         this.jobTriggerListeners = jobTriggerListeners;
         this.jobListeners = jobListeners;
+        // 调度器停止日志
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            SchedulerLog schedulerLog = newSchedulerLog();
+            schedulerLog.setEventName(SchedulerLog.EVENT_SHUTDOWN);
+            this.schedulerErrorListener(schedulerLog);
+        }));
     }
 
     // ---------------------------------------------------------------------------------------------------------------------------------------- api
@@ -728,14 +740,14 @@ public class TaskInstance {
         taskStore.beginTX(status -> {
             JobTrigger currentJobTrigger = jobTrigger;
             if (!allowConcurrent) {
-                // 锁住JobTrigger
-                taskStore.lockTriggerRow(jobTrigger.getNamespace(), jobTrigger.getId());
-                // 获取最新的JobTrigger
-                currentJobTrigger = taskStore.getTrigger(jobTrigger.getNamespace(), jobTrigger.getId());
+                // 锁住JobTrigger - 获取最新的JobTrigger
+                currentJobTrigger = taskStore.lockTriggerRow(jobTrigger.getNamespace(), jobTrigger.getId());
             }
             // 定时任务数据不存在了
             if (currentJobTrigger == null || currentJobTrigger.getNextFireTime() == null) {
                 taskContext.removeNextJobTrigger(jobTrigger.getId());
+                jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_1);
+                jobTriggerLog.setTriggerMsg("触发器不存在或NextFireTime为null");
                 return null;
             }
             // 判断是否被其他节点执行了
@@ -790,7 +802,8 @@ public class TaskInstance {
      * 执行定时任务逻辑
      */
     private void executeJob(final Date dbNow, final Job job, final JobTrigger jobTrigger) {
-        JobLog jobLog = newJobLog(job, jobTrigger);
+        final Scheduler scheduler = taskContext.getCurrentScheduler();
+        final JobLog jobLog = newJobLog(job, jobTrigger);
         try {
             final int jobReentryCount = taskContext.getAndIncrementJobReentryCount(job.getId());
             final long jobRunCount = taskContext.incrementAndGetJobRunCount(job.getId());
@@ -804,8 +817,20 @@ public class TaskInstance {
                 ));
                 return;
             }
+            // 记录任务执行日志(同步)
             jobLog.setRunCount(jobRunCount);
             jobStartRunListener(jobLog);
+            // 获取JobExecutor
+            JobExecutor jobExecutor = null;
+            for (JobExecutor executor : jobExecutors) {
+                if (executor.support(job.getType())) {
+                    jobExecutor = executor;
+                    break;
+                }
+            }
+            if (jobExecutor == null) {
+                throw new SchedulerException(String.format("暂不支持的任务类型，Job(id=%s)", job.getId()));
+            }
             // 支持重试执行任务
             final int maxRetryCount = Math.max(job.getMaxRetryCount(), 1);
             final long startTime = System.currentTimeMillis();
@@ -813,7 +838,7 @@ public class TaskInstance {
             while (retryCount < maxRetryCount) {
                 retryCount++;
                 try {
-                    runJob(dbNow, job);
+                    jobExecutor.exec(dbNow, job, scheduler, taskStore);
                     jobLog.setStatus(EnumConstant.JOB_LOG_STATUS_0);
                     break;
                 } catch (Exception e) {
@@ -850,24 +875,6 @@ public class TaskInstance {
             taskContext.decrementAndGetJobReentryCount(job.getId());
             jobEndRunListener(jobLog);
         }
-    }
-
-    /**
-     * 运行定时任务
-     */
-    private void runJob(final Date dbNow, final Job job) {
-        log.info("#### ---> 模拟执行定时任务 | name={} | time={}", job.getName(), DateTimeUtils.formatToString(dbNow, "HH:mm:ss.SSS"));
-        JobExecutor jobExecutor = null;
-        for (JobExecutor executor : jobExecutors) {
-            if (executor.support(job.getType())) {
-                jobExecutor = executor;
-                break;
-            }
-        }
-//        if (jobExecutor == null) {
-//            throw new SchedulerException(String.format("暂不支持的任务类型，Job(id=%s)", job.getId()));
-//        }
-//        jobExecutor.exec(dbNow, job);
     }
 
     // ---------------------------------------------------------------------------------------------------------------------------------------- listeners
