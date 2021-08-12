@@ -621,9 +621,13 @@ public class TaskInstance {
         // 轮询触发 job
         final List<JobTrigger> nextJobTriggerList = taskContext.getNextJobTriggerList();
         final Date dbNow = taskStore.getDataSourceNow();
-        for (JobTrigger jobTrigger : nextJobTriggerList) {
+        for (final JobTrigger jobTrigger : nextJobTriggerList) {
             // 判断触发时间是否已到
             if (dbNow.compareTo(jobTrigger.getNextFireTime()) < 0) {
+                continue;
+            }
+            // 判断是否正在触发
+            if (!taskContext.addTriggering(jobTrigger.getId())) {
                 continue;
             }
             try {
@@ -652,6 +656,8 @@ public class TaskInstance {
                         SchedulerLog schedulerLog = newSchedulerLog();
                         schedulerLog.setEventInfo(SchedulerLog.EVENT_JOB_TRIGGER_FIRE_ERROR, ExceptionUtils.getStackTraceAsString(e));
                         schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
+                    } finally {
+                        taskContext.removeTriggering(jobTrigger.getId());
                     }
                 });
                 log.debug(

@@ -6,9 +6,7 @@ import org.clever.task.core.config.SchedulerConfig;
 import org.clever.task.core.entity.JobTrigger;
 import org.clever.task.core.entity.Scheduler;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -42,6 +40,10 @@ public class TaskContext {
      * 接下来N秒内需要触发的触发器列表(N = heartbeatInterval * NEXT_TRIGGER_INTERVAL) {@code ConcurrentMap<jobTriggerId, JobTrigger>}
      */
     private volatile ConcurrentMap<Long, JobTrigger> nextJobTriggerMap;
+    /**
+     * 正在触发的触发器ID {@code Set<jobTriggerId>}
+     */
+    private final Set<Long> triggeringMap = Collections.synchronizedSet(new HashSet<>());
     /**
      * 当前节点任务运行的重入执行次数 {@code ConcurrentMap<jobId, jobReentryCount>}
      */
@@ -112,5 +114,17 @@ public class TaskContext {
 
     public void removeJobRunCount(Long jobId) {
         jobRunCountMap.remove(jobId);
+    }
+
+    public boolean addTriggering(Long jobTriggerId) {
+        return triggeringMap.add(jobTriggerId);
+    }
+
+    public void removeTriggering(Long jobTriggerId) {
+        triggeringMap.remove(jobTriggerId);
+    }
+
+    public int triggeringSize() {
+        return triggeringMap.size();
     }
 }
