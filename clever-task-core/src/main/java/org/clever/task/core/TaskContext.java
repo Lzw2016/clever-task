@@ -6,9 +6,13 @@ import org.clever.task.core.config.SchedulerConfig;
 import org.clever.task.core.entity.JobTrigger;
 import org.clever.task.core.entity.Scheduler;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -20,6 +24,8 @@ import java.util.stream.Collectors;
  * 创建时间：2021/08/01 20:55 <br/>
  */
 public class TaskContext {
+    private static final int INITIAL_CAPACITY = 1024;
+
     /**
      * 当前调度器配置
      */
@@ -43,20 +49,19 @@ public class TaskContext {
     /**
      * 正在触发的触发器ID {@code Set<jobTriggerId>}
      */
-    private final Set<Long> triggeringMap = Collections.synchronizedSet(new HashSet<>());
+    private final Set<Long> triggeringSet = new CopyOnWriteArraySet<>();
     /**
      * 当前节点任务运行的重入执行次数 {@code ConcurrentMap<jobId, jobReentryCount>}
      */
-    private final ConcurrentMap<Long, AtomicInteger> jobReentryCountMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Long, AtomicInteger> jobReentryCountMap = new ConcurrentHashMap<>(INITIAL_CAPACITY);
     /**
      * 当前节点触发器触发次数计数 {@code ConcurrentMap<jobTriggerId, fireCount>}
      */
-    private final ConcurrentMap<Long, AtomicLong> jobTriggerFireCountMap = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Long, AtomicLong> jobTriggerFireCountMap = new ConcurrentHashMap<>(INITIAL_CAPACITY);
     /**
      * 当前节点任务运行的总次数 {@code ConcurrentMap<jobId, jobRunCount>}
      */
-    private final ConcurrentMap<Long, AtomicLong> jobRunCountMap = new ConcurrentHashMap<>();
-
+    private final ConcurrentMap<Long, AtomicLong> jobRunCountMap = new ConcurrentHashMap<>(INITIAL_CAPACITY);
 
     public TaskContext(SchedulerConfig schedulerConfig, Scheduler scheduler) {
         this.schedulerConfig = schedulerConfig;
@@ -117,14 +122,14 @@ public class TaskContext {
     }
 
     public boolean addTriggering(Long jobTriggerId) {
-        return triggeringMap.add(jobTriggerId);
+        return triggeringSet.add(jobTriggerId);
     }
 
     public void removeTriggering(Long jobTriggerId) {
-        triggeringMap.remove(jobTriggerId);
+        triggeringSet.remove(jobTriggerId);
     }
 
     public int triggeringSize() {
-        return triggeringMap.size();
+        return triggeringSet.size();
     }
 }
