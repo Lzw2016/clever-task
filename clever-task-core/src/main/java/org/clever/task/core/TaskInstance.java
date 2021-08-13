@@ -12,6 +12,7 @@ import org.clever.task.core.model.SchedulerInfo;
 import org.clever.task.core.utils.ExceptionUtils;
 import org.clever.task.core.utils.JacksonMapper;
 import org.clever.task.core.utils.JobTriggerUtils;
+import org.clever.task.core.utils.SnowFlake;
 import org.springframework.util.Assert;
 
 import javax.sql.DataSource;
@@ -805,7 +806,7 @@ public class TaskInstance {
                 // 执行任务
                 jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_0);
                 final JobTrigger jobTriggerTmp = currentJobTrigger;
-                jobWorker.execute(() -> executeJob(dbNow, job, jobTriggerTmp));
+                jobWorker.execute(() -> executeJob(dbNow, job, jobTriggerTmp, jobTriggerLog.getId()));
             }
             // 计算下一次触发时间
             final Date newNextFireTime = JobTriggerUtils.getNextFireTime(dbNow, currentJobTrigger);
@@ -826,9 +827,9 @@ public class TaskInstance {
     /**
      * 执行定时任务逻辑
      */
-    private void executeJob(final Date dbNow, final Job job, final JobTrigger jobTrigger) {
+    private void executeJob(final Date dbNow, final Job job, final JobTrigger jobTrigger, final Long jobTriggerLogId) {
         final Scheduler scheduler = taskContext.getCurrentScheduler();
-        final JobLog jobLog = newJobLog(job, jobTrigger);
+        final JobLog jobLog = newJobLog(job, jobTrigger, jobTriggerLogId);
         try {
             final int jobReentryCount = taskContext.getAndIncrementJobReentryCount(job.getId());
             final long jobRunCount = taskContext.incrementAndGetJobRunCount(job.getId());
@@ -1077,6 +1078,7 @@ public class TaskInstance {
     private JobTriggerLog newJobTriggerLog(JobTrigger jobTrigger) {
         final Scheduler scheduler = taskContext.getCurrentScheduler();
         JobTriggerLog jobTriggerLog = new JobTriggerLog();
+        jobTriggerLog.setId(SnowFlake.SNOW_FLAKE.nextId());
         jobTriggerLog.setNamespace(scheduler.getNamespace());
         jobTriggerLog.setInstanceName(scheduler.getInstanceName());
         jobTriggerLog.setJobTriggerId(jobTrigger.getId());
@@ -1088,11 +1090,12 @@ public class TaskInstance {
         return jobTriggerLog;
     }
 
-    private JobLog newJobLog(Job job, JobTrigger jobTrigger) {
+    private JobLog newJobLog(Job job, JobTrigger jobTrigger, Long jobTriggerLogId) {
         final Scheduler scheduler = taskContext.getCurrentScheduler();
         JobLog jobLog = new JobLog();
         jobLog.setNamespace(scheduler.getNamespace());
         jobLog.setInstanceName(scheduler.getInstanceName());
+        jobLog.setJobTriggerLogId(jobTriggerLogId);
         jobLog.setJobTriggerId(jobTrigger.getId());
         jobLog.setJobId(job.getId());
         jobLog.setRetryCount(0);

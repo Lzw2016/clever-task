@@ -256,7 +256,7 @@ create index idx_scheduler_log_create_at on scheduler_log (create_at);
 ==================================================================================================================== */
 create table job_trigger_log
 (
-    id                  bigint          not null        auto_increment                          comment '主键id',
+    id                  bigint          not null                                                comment '主键id',
     namespace           varchar(63)     not null                                                comment '命名空间',
     instance_name       varchar(127)    not null                                                comment '调度器实例名称',
     job_trigger_id      bigint          not null                                                comment '任务触发器ID',
@@ -289,12 +289,13 @@ create table job_log
     id                  bigint          not null        auto_increment                          comment '主键id',
     namespace           varchar(63)     not null                                                comment '命名空间',
     instance_name       varchar(127)    not null                                                comment '调度器实例名称',
+    job_trigger_log_id  bigint          not null                                                comment '对应的触发器日志ID',
     job_trigger_id      bigint          not null                                                comment '任务触发器ID',
     job_id              bigint          not null                                                comment '任务ID',
     start_time          datetime(3)     not null                                                comment '开始执行时间',
     end_time            datetime(3)                                                             comment '执行结束时间',
     run_time            int                                                                     comment '执行耗时(单位：毫秒)',
-    status              tinyint         not null                                                comment '任务执行结果，0：成功，1：失败，2：取消',
+    status              tinyint                                                                 comment '任务执行结果，0：成功，1：失败，2：取消',
     retry_count         int             not null                                                comment '重试次数',
     exception_info      varchar(2047)                                                           comment '异常信息',
     run_count           bigint          not null                                                comment '执行次数',
@@ -304,6 +305,7 @@ create table job_log
     primary key (id)
 ) comment = '任务执行日志';
 create index idx_job_log_instance_name on job_log (instance_name(31));
+create index idx_job_log_job_trigger_log_id on job_log (job_trigger_log_id);
 create index idx_job_log_job_trigger_id on job_log (job_trigger_id);
 create index idx_job_log_job_id on job_log (job_id);
 create index idx_job_log_start_time on job_log (start_time);

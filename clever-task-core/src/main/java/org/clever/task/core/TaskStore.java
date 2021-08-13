@@ -302,10 +302,7 @@ public class TaskStore {
     }
 
     public int addJobTriggerLog(JobTriggerLog jobTriggerLog) {
-        GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
-        int count = namedParameterJdbcTemplate.update(SqlConstant.ADD_JOB_TRIGGER_LOG, new BeanPropertySqlParameterSource(jobTriggerLog), keyHolder);
-        jobTriggerLog.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
-        return count;
+        return namedParameterJdbcTemplate.update(SqlConstant.ADD_JOB_TRIGGER_LOG, new BeanPropertySqlParameterSource(jobTriggerLog));
     }
 
     public int addJobLog(JobLog jobLog) {

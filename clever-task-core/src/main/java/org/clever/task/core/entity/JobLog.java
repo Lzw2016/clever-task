@@ -32,6 +32,11 @@ public class JobLog implements Serializable {
     private String instanceName;
 
     /**
+     * 对应的触发器日志ID
+     */
+    private Long jobTriggerLogId;
+
+    /**
      * 任务触发器ID
      */
     private Long jobTriggerId;
