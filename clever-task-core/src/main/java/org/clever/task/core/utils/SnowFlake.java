@@ -9,12 +9,6 @@ package org.clever.task.core.utils;
  * 12位的计数序列号，序列号即一系列的自增id，可以支持同一节点同一毫秒生成多个ID序号，12位的计数序列号支持每个节点每毫秒产生4096个ID序号。
  */
 public class SnowFlake {
-
-    /**
-     * SnowFlake 全局单例，“数据中心ID”和“机器号ID”都是0
-     */
-    public static final SnowFlake SNOW_FLAKE = new SnowFlake(0L, 0L);
-
     /**
      * 起始的时间戳
      */
@@ -25,8 +19,8 @@ public class SnowFlake {
      * 10位的机器标识 ( 机器标识占用的位数 + 数据中心占用的位数)
      * 12位的计数序列号
      */
-    private final static long DATA_CENTER_BIT = 5; //数据中心占用的位数
-    private final static long MACHINE_BIT = 5;     //机器标识占用的位数
+    private final static long DATA_CENTER_BIT = 10; //数据中心占用的位数
+    private final static long MACHINE_BIT = 0;    //机器标识占用的位数
     private final static long SEQUENCE_BIT = 12;   //序列号占用的位数
 
     /**

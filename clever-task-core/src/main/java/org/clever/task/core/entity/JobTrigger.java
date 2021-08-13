@@ -89,6 +89,11 @@ public class JobTrigger implements Serializable {
     private String description;
 
     /**
+     * 乐观锁
+     */
+    private Long lockVersion;
+
+    /**
      * 创建时间
      */
     private Date createAt;

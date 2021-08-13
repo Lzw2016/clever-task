@@ -12,7 +12,6 @@ import org.clever.task.core.model.SchedulerInfo;
 import org.clever.task.core.utils.ExceptionUtils;
 import org.clever.task.core.utils.JacksonMapper;
 import org.clever.task.core.utils.JobTriggerUtils;
-import org.clever.task.core.utils.SnowFlake;
 import org.springframework.util.Assert;
 
 import javax.sql.DataSource;
@@ -719,7 +718,17 @@ public class TaskInstance {
                     jobTrigger.getId(), jobTrigger.getJobId()
             ));
         }
-        // 当前任务是否禁用
+        // 1.控制并发执行 - 是否允许多节点并发执行
+        final boolean allowConcurrent = Objects.equals(EnumConstant.JOB_ALLOW_CONCURRENT_1, job.getAllowConcurrent());
+        if (!allowConcurrent) {
+            boolean lock = taskStore.beginTX(status -> taskStore.getLockTrigger(jobTrigger.getNamespace(), jobTrigger.getId(), jobTrigger.getLockVersion()));
+            // 未得到锁 - 判断是否被其他节点执行了
+            if (!lock) {
+                taskContext.removeNextJobTrigger(jobTrigger.getId());
+                return;
+            }
+        }
+        // 2.当前任务是否禁用
         if (!Objects.equals(job.getDisable(), EnumConstant.JOB_DISABLE_0)) {
             // 当前任务被禁用
             jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_1);
@@ -727,7 +736,7 @@ public class TaskInstance {
             return;
         }
         final int jobReentryCount = taskContext.getJobReentryCount(jobTrigger.getJobId());
-        // 1.控制重入执行 - 最大重入执行数量
+        // 3..控制重入执行 - 最大重入执行数量
         if (jobReentryCount > Math.max(job.getMaxReentry(), 0)) {
             jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_1);
             jobTriggerLog.setTriggerMsg(String.format(
@@ -736,9 +745,7 @@ public class TaskInstance {
             ));
             return;
         }
-        // 2.控制并发执行 - 是否允许多节点并发执行
-        final boolean allowConcurrent = Objects.equals(EnumConstant.JOB_ALLOW_CONCURRENT_1, job.getAllowConcurrent());
-        // 3.控制任务执行节点 // TODO 暂不支持控制任务执行节点
+        // 4.控制任务执行节点 // TODO 暂不支持控制任务执行节点
         switch (job.getRouteStrategy()) {
             case EnumConstant.JOB_ROUTE_STRATEGY_1:
                 // 指定节点优先
@@ -750,7 +757,7 @@ public class TaskInstance {
                 // 固定节点黑名单
                 break;
         }
-        // 4.负载均衡策略 // TODO 暂不支持负载均衡策略
+        // 5.负载均衡策略 // TODO 暂不支持负载均衡策略
         switch (job.getLoadBalance()) {
             case EnumConstant.JOB_LOAD_BALANCE_1:
                 // 抢占
@@ -765,68 +772,111 @@ public class TaskInstance {
                 // 一致性HASH
                 break;
         }
-        taskStore.beginTX(status -> {
-            JobTrigger currentJobTrigger = jobTrigger;
-            if (!allowConcurrent) {
-                // 锁住JobTrigger - 获取最新的JobTrigger
-                currentJobTrigger = taskStore.lockTriggerRow(jobTrigger.getNamespace(), jobTrigger.getId());
+        // 触发定时任务
+        boolean needRunJob = true;
+        Date lastFireTime = jobTrigger.getNextFireTime();
+        // 判断是否错过了触发
+        final Integer misfireStrategy = jobTrigger.getMisfireStrategy();
+        if (JobTriggerUtils.isMisFire(dbNow, jobTrigger)) {
+            needRunJob = false;
+            // 需要补偿触发
+            switch (misfireStrategy) {
+                case EnumConstant.JOB_TRIGGER_MISFIRE_STRATEGY_1:
+                    // 忽略补偿触发
+                    jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_1);
+                    jobTriggerLog.setTriggerMsg(String.format("忽略补偿触发，JobId=%s", job.getId()));
+                    break;
+                case EnumConstant.JOB_TRIGGER_MISFIRE_STRATEGY_2:
+                    // 立即补偿触发一次
+                    needRunJob = true;
+                    lastFireTime = JobTriggerUtils.removeMillisecond(dbNow);
+                    break;
+                default:
+                    throw new SchedulerException(String.format("任务触发器misfireStrategy字段值错误，JobTrigger(id=%s)", jobTrigger.getId()));
             }
-            // 定时任务数据不存在了
-            if (currentJobTrigger == null || currentJobTrigger.getNextFireTime() == null) {
-                taskContext.removeNextJobTrigger(jobTrigger.getId());
-                jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_1);
-                jobTriggerLog.setTriggerMsg("触发器不存在或NextFireTime为null");
-                return null;
-            }
-            // 判断是否被其他节点执行了
-            if (dbNow.compareTo(currentJobTrigger.getNextFireTime()) < 0) {
-                taskContext.putNextJobTrigger(currentJobTrigger);
-                return null;
-            }
-            // 触发定时任务
-            boolean needRunJob = true;
-            Date lastFireTime = currentJobTrigger.getNextFireTime();
-            // 判断是否错过了触发
-            final Integer misfireStrategy = jobTrigger.getMisfireStrategy();
-            if (JobTriggerUtils.isMisFire(dbNow, jobTrigger)) {
-                needRunJob = false;
-                // 需要补偿触发
-                switch (misfireStrategy) {
-                    case EnumConstant.JOB_TRIGGER_MISFIRE_STRATEGY_1:
-                        // 忽略补偿触发
-                        jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_1);
-                        jobTriggerLog.setTriggerMsg(String.format("忽略补偿触发，JobId=%s", job.getId()));
-                        break;
-                    case EnumConstant.JOB_TRIGGER_MISFIRE_STRATEGY_2:
-                        // 立即补偿触发一次
-                        needRunJob = true;
-                        lastFireTime = JobTriggerUtils.removeMillisecond(dbNow);
-                        break;
-                    default:
-                        throw new SchedulerException(String.format("任务触发器misfireStrategy字段值错误，JobTrigger(id=%s)", jobTrigger.getId()));
-                }
-            }
-            // 执行定时任务
-            if (needRunJob) {
-                // 执行任务
-                jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_0);
-                final JobTrigger jobTriggerTmp = currentJobTrigger;
-                jobWorker.execute(() -> executeJob(dbNow, job, jobTriggerTmp, jobTriggerLog.getId()));
-            }
-            // 计算下一次触发时间
-            final Date newNextFireTime = JobTriggerUtils.getNextFireTime(dbNow, currentJobTrigger);
-            currentJobTrigger.setLastFireTime(lastFireTime);
-            currentJobTrigger.setNextFireTime(newNextFireTime);
-            taskStore.updateFireTime(currentJobTrigger);
-            // 获取最新的JobTrigger
-            currentJobTrigger = taskStore.getTrigger(currentJobTrigger.getNamespace(), currentJobTrigger.getId());
-            if (currentJobTrigger == null) {
-                taskContext.removeNextJobTrigger(jobTrigger.getId());
-            } else {
-                taskContext.putNextJobTrigger(currentJobTrigger);
-            }
-            return null;
+        }
+        // 执行定时任务
+        if (needRunJob) {
+            // 执行任务
+            jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_0);
+            jobWorker.execute(() -> executeJob(dbNow, job, jobTrigger, jobTriggerLog.getId()));
+        }
+        // 计算下一次触发时间
+        final Date newNextFireTime = JobTriggerUtils.getNextFireTime(dbNow, jobTrigger);
+        jobTrigger.setLastFireTime(lastFireTime);
+        jobTrigger.setNextFireTime(newNextFireTime);
+        // 更新JobTrigger并获取最新的JobTrigger
+        final JobTrigger newJobTrigger = taskStore.beginTX(status -> {
+            taskStore.updateFireTime(jobTrigger);
+            return taskStore.getTrigger(jobTrigger.getNamespace(), jobTrigger.getId());
         });
+        if (newJobTrigger == null) {
+            taskContext.removeNextJobTrigger(jobTrigger.getId());
+        } else {
+            taskContext.putNextJobTrigger(newJobTrigger);
+        }
+//        taskStore.beginTX(status -> {
+//            JobTrigger currentJobTrigger = jobTrigger;
+//            if (!allowConcurrent) {
+//                // 锁住JobTrigger - 获取最新的JobTrigger
+//                currentJobTrigger = taskStore.lockTriggerRow(jobTrigger.getNamespace(), jobTrigger.getId());
+//            }
+//            // 定时任务数据不存在了
+//            if (currentJobTrigger == null || currentJobTrigger.getNextFireTime() == null) {
+//                taskContext.removeNextJobTrigger(jobTrigger.getId());
+//                jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_1);
+//                jobTriggerLog.setTriggerMsg("触发器不存在或NextFireTime为null");
+//                return null;
+//            }
+//            // 判断是否被其他节点执行了
+//            if (dbNow.compareTo(currentJobTrigger.getNextFireTime()) < 0) {
+//                taskContext.putNextJobTrigger(currentJobTrigger);
+//                return null;
+//            }
+//            // 触发定时任务
+//            boolean needRunJob = true;
+//            Date lastFireTime = currentJobTrigger.getNextFireTime();
+//            // 判断是否错过了触发
+//            final Integer misfireStrategy = jobTrigger.getMisfireStrategy();
+//            if (JobTriggerUtils.isMisFire(dbNow, jobTrigger)) {
+//                needRunJob = false;
+//                // 需要补偿触发
+//                switch (misfireStrategy) {
+//                    case EnumConstant.JOB_TRIGGER_MISFIRE_STRATEGY_1:
+//                        // 忽略补偿触发
+//                        jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_1);
+//                        jobTriggerLog.setTriggerMsg(String.format("忽略补偿触发，JobId=%s", job.getId()));
+//                        break;
+//                    case EnumConstant.JOB_TRIGGER_MISFIRE_STRATEGY_2:
+//                        // 立即补偿触发一次
+//                        needRunJob = true;
+//                        lastFireTime = JobTriggerUtils.removeMillisecond(dbNow);
+//                        break;
+//                    default:
+//                        throw new SchedulerException(String.format("任务触发器misfireStrategy字段值错误，JobTrigger(id=%s)", jobTrigger.getId()));
+//                }
+//            }
+//            // 执行定时任务
+//            if (needRunJob) {
+//                // 执行任务
+//                jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_0);
+//                final JobTrigger jobTriggerTmp = currentJobTrigger;
+//                jobWorker.execute(() -> executeJob(dbNow, job, jobTriggerTmp, jobTriggerLog.getId()));
+//            }
+//            // 计算下一次触发时间
+//            final Date newNextFireTime = JobTriggerUtils.getNextFireTime(dbNow, currentJobTrigger);
+//            currentJobTrigger.setLastFireTime(lastFireTime);
+//            currentJobTrigger.setNextFireTime(newNextFireTime);
+//            taskStore.updateFireTime(currentJobTrigger);
+//            // 获取最新的JobTrigger
+//            currentJobTrigger = taskStore.getTrigger(currentJobTrigger.getNamespace(), currentJobTrigger.getId());
+//            if (currentJobTrigger == null) {
+//                taskContext.removeNextJobTrigger(jobTrigger.getId());
+//            } else {
+//                taskContext.putNextJobTrigger(currentJobTrigger);
+//            }
+//            return null;
+//        });
     }
 
     /**
@@ -1083,7 +1133,7 @@ public class TaskInstance {
     private JobTriggerLog newJobTriggerLog(JobTrigger jobTrigger) {
         final Scheduler scheduler = taskContext.getCurrentScheduler();
         JobTriggerLog jobTriggerLog = new JobTriggerLog();
-        jobTriggerLog.setId(SnowFlake.SNOW_FLAKE.nextId());
+        jobTriggerLog.setId(taskContext.getSnowFlake().nextId());
         jobTriggerLog.setNamespace(scheduler.getNamespace());
         jobTriggerLog.setInstanceName(scheduler.getInstanceName());
         jobTriggerLog.setJobTriggerId(jobTrigger.getId());

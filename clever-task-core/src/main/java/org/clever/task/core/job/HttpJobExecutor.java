@@ -26,7 +26,7 @@ public class HttpJobExecutor implements JobExecutor {
     }
 
     @Override
-    public void exec(Date dbNow, Job job, Scheduler scheduler, TaskStore taskStore) {
+    public void exec(Date dbNow, Job job, Scheduler scheduler, TaskStore taskStore) throws Exception {
         HttpJob httpJob = taskStore.beginReadOnlyTX(status -> taskStore.getHttpJob(scheduler.getNamespace(), job.getId()));
         // TODO 发送Http请求
     }

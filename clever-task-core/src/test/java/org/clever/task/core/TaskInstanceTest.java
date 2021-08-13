@@ -67,7 +67,7 @@ public class TaskInstanceTest {
         Thread.sleep(1000 * 60 * 10);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
-                Thread.sleep(1000);
+                Thread.sleep(8_000);
             } catch (InterruptedException ignored) {
             }
             dataSource.close();

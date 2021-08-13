@@ -6,6 +6,7 @@ import lombok.Setter;
 import org.clever.task.core.config.SchedulerConfig;
 import org.clever.task.core.entity.JobTrigger;
 import org.clever.task.core.entity.Scheduler;
+import org.clever.task.core.utils.SnowFlake;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -34,6 +35,11 @@ public class TaskContext {
      */
     @Getter
     private final Scheduler currentScheduler;
+    /**
+     *
+     */
+    @Getter
+    private final SnowFlake snowFlake;
     /**
      * 当前集群可用的调度器列表
      */
@@ -68,6 +74,7 @@ public class TaskContext {
     public TaskContext(SchedulerConfig schedulerConfig, Scheduler scheduler) {
         this.schedulerConfig = schedulerConfig;
         this.currentScheduler = scheduler;
+        this.snowFlake = new SnowFlake(scheduler.getId() % 1024, 0);
     }
 
     public void setNextJobTriggerMap(List<JobTrigger> nextJobTriggerList) {

@@ -216,6 +216,7 @@ create table job_trigger
     fixed_interval      bigint                                                                  comment '固定间隔触发，间隔时间(单位：秒)',
     disable             tinyint         not null        default 0                               comment '是否禁用：0-启用，1-禁用',
     description         varchar(511)                                                            comment '描述',
+    lock_version        bigint          not null        default 0                               comment '乐观锁',
     create_at           datetime(3)     not null        default current_timestamp(3)            comment '创建时间',
     update_at           datetime(3)                     on update current_timestamp(3)          comment '更新时间',
     primary key (id)

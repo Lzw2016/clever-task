@@ -118,6 +118,8 @@ public interface SqlConstant {
 
     String LOCK_TRIGGER_ROW = "select * from job_trigger where namespace=? and id=? for update";
 
+    String GET_LOCK_TRIGGER = "update job_trigger set lock_version=lock_version+1 where id=? and namespace=? and lock_version=?";
+
     // ---------------------------------------------------------------------------------------------------------------------------------------- job
 
     String GET_JOB_BY_ID = "select * from job where namespace=? and id=?";

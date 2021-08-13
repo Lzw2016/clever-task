@@ -294,6 +294,13 @@ public class TaskStore {
         return jobTriggerList.get(0);
     }
 
+    /**
+     * 获取触发器乐观锁
+     */
+    public boolean getLockTrigger(String namespace, Long jobTriggerId, Long lockVersion) {
+        return jdbcTemplate.update(SqlConstant.GET_LOCK_TRIGGER, jobTriggerId, namespace, lockVersion) > 0;
+    }
+
     public int addSchedulerLog(SchedulerLog schedulerLog) {
         GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
         int count = namedParameterJdbcTemplate.update(SqlConstant.ADD_SCHEDULER_LOG, new BeanPropertySqlParameterSource(schedulerLog), keyHolder);
