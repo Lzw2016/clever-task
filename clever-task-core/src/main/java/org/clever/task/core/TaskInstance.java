@@ -28,34 +28,6 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class TaskInstance {
-    private static final String DATA_CHECK_DAEMON_NAME = "定时任务数据校验";
-    private static final String REGISTER_SCHEDULER_DAEMON_NAME = "调度器节点注册";
-    private static final String CALC_NEXT_FIRE_TIME_DAEMON_NAME = "校准触发器触发时间";
-    private static final String HEARTBEAT_DAEMON_NAME = "心跳保持";
-    private static final String RELOAD_SCHEDULER_DAEMON_NAME = "加载调度器";
-    private static final String RELOAD_NEXT_TRIGGER_DAEMON_NAME = "加载将要触发的触发器";
-    private static final String TRIGGER_JOB_EXEC_DAEMON_NAME = "调度器轮询任务";
-
-    private static final String SCHEDULER_EXECUTOR_NAME = "调度线程池";
-    private static final String JOB_EXECUTOR_NAME = "定时任务执行线程池";
-
-    // 数据完整性校验(一致性校验)的时间间隔(单位：毫秒)
-    private static final int DATA_CHECK_INTERVAL = 300_000;
-    // 调度器节点注册的时间间隔(单位：毫秒)
-    private static final int REGISTER_SCHEDULER_INTERVAL = 60_000;
-    // 初始化触发器下一次触发时间(校准触发器触发时间)的时间间隔(单位：毫秒)
-    private static final int CALC_NEXT_FIRE_TIME_INTERVAL = 300_000;
-    // 维护当前集群可用的调度器列表的时间间隔(单位：毫秒)
-    private static final int RELOAD_SCHEDULER_INTERVAL = 5_000;
-    // 维护接下来N秒内需要触发的触发器列表的时间间隔(单位：毫秒)
-    private static final int RELOAD_NEXT_TRIGGER_INTERVAL = 3_000;
-    // 接下来N秒内需要触发的触发器列表(N = heartbeatInterval * NEXT_TRIGGER_N)
-    private static final int NEXT_TRIGGER_N = 2;
-    // 调度器轮询任务的时间间隔(单位：毫秒)
-    private static final int TRIGGER_JOB_EXEC_INTERVAL = 3;
-    // 调度器轮询任务的最大时间间隔(单位：毫秒)
-    private static final int TRIGGER_JOB_EXEC_MAX_INTERVAL = 900;
-
     /**
      * 调度器数据存储对象
      */
@@ -159,22 +131,22 @@ public class TaskInstance {
         Scheduler scheduler = registerScheduler(toScheduler(schedulerConfig));
         taskContext = new TaskContext(schedulerConfig, scheduler);
         // 初始化守护线程池
-        dataCheckDaemon = new DaemonExecutor(DATA_CHECK_DAEMON_NAME, schedulerConfig.getInstanceName());
-        registerSchedulerDaemon = new DaemonExecutor(REGISTER_SCHEDULER_DAEMON_NAME, schedulerConfig.getInstanceName());
-        calcNextFireTimeDaemon = new DaemonExecutor(CALC_NEXT_FIRE_TIME_DAEMON_NAME, schedulerConfig.getInstanceName());
-        heartbeatDaemon = new DaemonExecutor(HEARTBEAT_DAEMON_NAME, schedulerConfig.getInstanceName());
-        reloadSchedulerDaemon = new DaemonExecutor(RELOAD_SCHEDULER_DAEMON_NAME, schedulerConfig.getInstanceName());
-        reloadNextTriggerDaemon = new DaemonExecutor(RELOAD_NEXT_TRIGGER_DAEMON_NAME, schedulerConfig.getInstanceName());
-        triggerJobExecDaemon = new DaemonExecutor(TRIGGER_JOB_EXEC_DAEMON_NAME, schedulerConfig.getInstanceName());
+        dataCheckDaemon = new DaemonExecutor(GlobalConstant.DATA_CHECK_DAEMON_NAME, schedulerConfig.getInstanceName());
+        registerSchedulerDaemon = new DaemonExecutor(GlobalConstant.REGISTER_SCHEDULER_DAEMON_NAME, schedulerConfig.getInstanceName());
+        calcNextFireTimeDaemon = new DaemonExecutor(GlobalConstant.CALC_NEXT_FIRE_TIME_DAEMON_NAME, schedulerConfig.getInstanceName());
+        heartbeatDaemon = new DaemonExecutor(GlobalConstant.HEARTBEAT_DAEMON_NAME, schedulerConfig.getInstanceName());
+        reloadSchedulerDaemon = new DaemonExecutor(GlobalConstant.RELOAD_SCHEDULER_DAEMON_NAME, schedulerConfig.getInstanceName());
+        reloadNextTriggerDaemon = new DaemonExecutor(GlobalConstant.RELOAD_NEXT_TRIGGER_DAEMON_NAME, schedulerConfig.getInstanceName());
+        triggerJobExecDaemon = new DaemonExecutor(GlobalConstant.TRIGGER_JOB_EXEC_DAEMON_NAME, schedulerConfig.getInstanceName());
         // 初始化工作线程池
         schedulerWorker = new WorkExecutor(
-                SCHEDULER_EXECUTOR_NAME,
+                GlobalConstant.SCHEDULER_EXECUTOR_NAME,
                 schedulerConfig.getInstanceName(),
                 schedulerConfig.getSchedulerExecutorPoolSize(),
                 schedulerConfig.getMaxConcurrent()
         );
         jobWorker = new WorkExecutor(
-                JOB_EXECUTOR_NAME,
+                GlobalConstant.JOB_EXECUTOR_NAME,
                 schedulerConfig.getInstanceName(),
                 schedulerConfig.getJobExecutorPoolSize(),
                 schedulerConfig.getMaxConcurrent()
@@ -258,7 +230,7 @@ public class TaskInstance {
                                 schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
                             }
                         },
-                        DATA_CHECK_INTERVAL
+                        GlobalConstant.DATA_CHECK_INTERVAL
                 );
                 // 2.调度器节点注册
                 registerSchedulerDaemon.scheduleAtFixedRate(
@@ -272,7 +244,7 @@ public class TaskInstance {
                                 schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
                             }
                         },
-                        REGISTER_SCHEDULER_INTERVAL
+                        GlobalConstant.REGISTER_SCHEDULER_INTERVAL
                 );
                 // 3.初始化触发器下一次触发时间(校准触发器触发时间)
                 calcNextFireTimeDaemon.scheduleAtFixedRate(
@@ -287,7 +259,7 @@ public class TaskInstance {
                                 schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
                             }
                         },
-                        CALC_NEXT_FIRE_TIME_INTERVAL
+                        GlobalConstant.CALC_NEXT_FIRE_TIME_INTERVAL
                 );
                 // 1.心跳保持
                 heartbeatDaemon.scheduleAtFixedRate(
@@ -317,14 +289,14 @@ public class TaskInstance {
                                 schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
                             }
                         },
-                        RELOAD_SCHEDULER_INTERVAL
+                        GlobalConstant.RELOAD_SCHEDULER_INTERVAL
                 );
                 // 3.维护接下来N秒内需要触发的触发器列表
                 reloadNextTriggerDaemon.scheduleAtFixedRate(
                         () -> {
                             boolean hasPermit = false;
                             try {
-                                hasPermit = schedulerCoordinator.tryAcquire(RELOAD_NEXT_TRIGGER_INTERVAL, TimeUnit.MILLISECONDS);
+                                hasPermit = schedulerCoordinator.tryAcquire(GlobalConstant.RELOAD_NEXT_TRIGGER_INTERVAL, TimeUnit.MILLISECONDS);
                                 reloadNextTrigger();
                             } catch (Exception e) {
                                 log.error("[TaskInstance] 维护接下来N秒内需要触发的触发器列表失败 | instanceName={}", this.getInstanceName(), e);
@@ -338,14 +310,14 @@ public class TaskInstance {
                                 }
                             }
                         },
-                        RELOAD_NEXT_TRIGGER_INTERVAL
+                        GlobalConstant.RELOAD_NEXT_TRIGGER_INTERVAL
                 );
                 // 4.调度器轮询任务
                 triggerJobExecDaemon.scheduleAtFixedRate(
                         () -> {
                             boolean hasPermit = false;
                             try {
-                                hasPermit = schedulerCoordinator.tryAcquire(TRIGGER_JOB_EXEC_MAX_INTERVAL, TimeUnit.MILLISECONDS);
+                                hasPermit = schedulerCoordinator.tryAcquire(GlobalConstant.TRIGGER_JOB_EXEC_MAX_INTERVAL, TimeUnit.MILLISECONDS);
                                 triggerJobExec();
                             } catch (Exception e) {
                                 log.error("[TaskInstance] 调度器轮询任务失败 | instanceName={}", this.getInstanceName(), e);
@@ -359,7 +331,7 @@ public class TaskInstance {
                                 }
                             }
                         },
-                        TRIGGER_JOB_EXEC_INTERVAL
+                        GlobalConstant.TRIGGER_JOB_EXEC_INTERVAL
                 );
                 // 初始化完成就是运行中
                 taskState = TaskState.Running;
@@ -629,7 +601,7 @@ public class TaskInstance {
      */
     private void reloadNextTrigger() {
         final Scheduler scheduler = taskContext.getCurrentScheduler();
-        final long nextTime = RELOAD_NEXT_TRIGGER_INTERVAL * NEXT_TRIGGER_N;
+        final long nextTime = GlobalConstant.RELOAD_NEXT_TRIGGER_INTERVAL * GlobalConstant.NEXT_TRIGGER_N;
         final List<JobTrigger> nextJobTriggerList = taskStore.beginReadOnlyTX(status -> taskStore.queryNextTrigger(scheduler.getNamespace(), nextTime));
         taskContext.setNextJobTriggerMap(nextJobTriggerList);
     }
@@ -716,7 +688,7 @@ public class TaskInstance {
                     break;
                 }
             }
-            if (done || (System.currentTimeMillis() - startTime) >= TRIGGER_JOB_EXEC_MAX_INTERVAL) {
+            if (done || (System.currentTimeMillis() - startTime) >= GlobalConstant.TRIGGER_JOB_EXEC_MAX_INTERVAL) {
                 break;
             }
             Thread.yield();

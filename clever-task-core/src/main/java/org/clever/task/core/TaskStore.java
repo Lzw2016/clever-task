@@ -29,9 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 创建时间：2021/08/08 16:14 <br/>
  */
 public class TaskStore {
-    // 数据库事务名称前缀
-    private static final String TRANSACTION_NAME_PREFIX = "SCH_TX";
-
     /**
      * 事务序列号
      */
@@ -487,9 +484,9 @@ public class TaskStore {
         int nextSerialNumber = transactionSerialNumber.incrementAndGet();
         String transactionName;
         if (nextSerialNumber < 0) {
-            transactionName = TRANSACTION_NAME_PREFIX + nextSerialNumber;
+            transactionName = GlobalConstant.TRANSACTION_NAME_PREFIX + nextSerialNumber;
         } else {
-            transactionName = TRANSACTION_NAME_PREFIX + "+" + nextSerialNumber;
+            transactionName = GlobalConstant.TRANSACTION_NAME_PREFIX + "+" + nextSerialNumber;
         }
         return transactionName;
     }

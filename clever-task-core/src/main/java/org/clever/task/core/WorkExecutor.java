@@ -14,9 +14,6 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class WorkExecutor {
-    // 线程池线程保持时间
-    private static final long THREAD_POOL_KEEP_ALIVE_SECONDS = 3L;
-
     /**
      * 守护线程名称
      */
@@ -36,11 +33,13 @@ public class WorkExecutor {
         executor = new ThreadPoolExecutor(
                 poolSize,
                 poolSize,
-                THREAD_POOL_KEEP_ALIVE_SECONDS,
-                TimeUnit.SECONDS,
+                GlobalConstant.THREAD_POOL_KEEP_ALIVE_SECONDS,
+                TimeUnit.MILLISECONDS,
                 new LinkedBlockingQueue<>(workQueueCapacity),
-                // TODO namingPattern Mapping
-                new BasicThreadFactory.Builder().namingPattern("task-work-%d").daemon(false).build()
+                new BasicThreadFactory.Builder()
+                        .namingPattern(GlobalConstant.THREAD_POOL_NAME.getOrDefault(name, "work_executor-pool-%d"))
+                        .daemon(true)
+                        .build()
         );
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {

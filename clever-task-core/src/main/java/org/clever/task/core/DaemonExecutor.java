@@ -18,8 +18,6 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class DaemonExecutor {
-    private static final int INITIAL_DELAY = 0;
-
     /**
      * 守护线程名称
      */
@@ -49,8 +47,12 @@ public class DaemonExecutor {
     public DaemonExecutor(String name, String instanceName) {
         this.name = name;
         this.instanceName = instanceName;
-        // TODO namingPattern Mapping
-        executor = Executors.newSingleThreadScheduledExecutor(new BasicThreadFactory.Builder().namingPattern("task-daemon-%d").daemon(true).build());
+        executor = Executors.newSingleThreadScheduledExecutor(
+                new BasicThreadFactory.Builder()
+                        .namingPattern(GlobalConstant.THREAD_POOL_NAME.getOrDefault(name, "daemon_executor-pool-%d"))
+                        .daemon(true)
+                        .build()
+        );
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (future != null && !future.isDone() && !future.isCancelled()) {
                 try {
@@ -79,7 +81,7 @@ public class DaemonExecutor {
         Assert.notNull(command, "参数command不能为空");
         Assert.isTrue(period > 0, "参数period值必须大于0");
         stop();
-        future = executor.scheduleAtFixedRate(() -> run(command), INITIAL_DELAY, period, TimeUnit.MILLISECONDS);
+        future = executor.scheduleAtFixedRate(() -> run(command), GlobalConstant.THREAD_POOL_INITIAL_DELAY, period, TimeUnit.MILLISECONDS);
     }
 
     /**

@@ -24,9 +24,6 @@ import java.util.stream.Collectors;
  * 创建时间：2021/08/01 20:55 <br/>
  */
 public class TaskContext {
-    // 集合初始容量
-    private static final int INITIAL_CAPACITY = 1024;
-
     /**
      * 当前调度器配置
      */
@@ -54,15 +51,15 @@ public class TaskContext {
     /**
      * 当前节点任务运行的重入执行次数 {@code ConcurrentMap<jobId, jobReentryCount>}
      */
-    private final ConcurrentMap<Long, AtomicInteger> jobReentryCountMap = new ConcurrentHashMap<>(INITIAL_CAPACITY);
+    private final ConcurrentMap<Long, AtomicInteger> jobReentryCountMap = new ConcurrentHashMap<>(GlobalConstant.INITIAL_CAPACITY);
     /**
      * 当前节点触发器触发次数计数 {@code ConcurrentMap<jobTriggerId, fireCount>}
      */
-    private final ConcurrentMap<Long, AtomicLong> jobTriggerFireCountMap = new ConcurrentHashMap<>(INITIAL_CAPACITY);
+    private final ConcurrentMap<Long, AtomicLong> jobTriggerFireCountMap = new ConcurrentHashMap<>(GlobalConstant.INITIAL_CAPACITY);
     /**
      * 当前节点任务运行的总次数 {@code ConcurrentMap<jobId, jobRunCount>}
      */
-    private final ConcurrentMap<Long, AtomicLong> jobRunCountMap = new ConcurrentHashMap<>(INITIAL_CAPACITY);
+    private final ConcurrentMap<Long, AtomicLong> jobRunCountMap = new ConcurrentHashMap<>(GlobalConstant.INITIAL_CAPACITY);
 
     public TaskContext(SchedulerConfig schedulerConfig, Scheduler scheduler) {
         this.schedulerConfig = schedulerConfig;
