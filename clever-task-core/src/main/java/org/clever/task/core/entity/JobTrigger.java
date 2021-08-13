@@ -59,9 +59,9 @@ public class JobTrigger implements Serializable {
     private Integer misfireStrategy;
 
     /**
-     * 触发器状态，0：停止，1：触发中
+     * 乐观锁
      */
-    private Integer state;
+    private Long lockVersion;
 
     /**
      * 任务类型，1：cron触发，2：固定速率触发
@@ -87,11 +87,6 @@ public class JobTrigger implements Serializable {
      * 描述
      */
     private String description;
-
-    /**
-     * 乐观锁
-     */
-    private Long lockVersion;
 
     /**
      * 创建时间
