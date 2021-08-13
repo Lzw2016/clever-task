@@ -45,13 +45,17 @@ public class TaskContext {
      */
     private volatile ConcurrentMap<Long, JobTrigger> nextJobTriggerMap;
     /**
-     * 正在触发的触发器ID {@code Set<jobTriggerId>}
+     * 正在触发的触发器ID {@code Set<jobTriggerId + nextFireTime>}
      */
-    private final Set<Long> triggeringSet = Sets.newConcurrentHashSet();
+    private final Set<String> triggeringSet = Sets.newConcurrentHashSet();
     /**
      * 当前节点任务运行的重入执行次数 {@code ConcurrentMap<jobId, jobReentryCount>}
      */
     private final ConcurrentMap<Long, AtomicInteger> jobReentryCountMap = new ConcurrentHashMap<>(GlobalConstant.INITIAL_CAPACITY);
+    /**
+     * 触发器最后一次触发的时间 {@code ConcurrentMap<jobTriggerId, 时间戳>}
+     */
+    private final ConcurrentMap<Long, Long> jobLastTriggerFireTimeMap = new ConcurrentHashMap<>(GlobalConstant.INITIAL_CAPACITY);
     /**
      * 当前节点触发器触发次数计数 {@code ConcurrentMap<jobTriggerId, fireCount>}
      */
@@ -129,15 +133,24 @@ public class TaskContext {
         jobRunCountMap.remove(jobId);
     }
 
-    public synchronized boolean addTriggering(Long jobTriggerId) {
-        return triggeringSet.add(jobTriggerId);
+    public boolean addTriggering(JobTrigger jobTrigger) {
+        return triggeringSet.add(String.format("%s_%s", jobTrigger.getId(), jobTrigger.getNextFireTime().getTime()));
     }
 
-    public void removeTriggering(Long jobTriggerId) {
-        triggeringSet.remove(jobTriggerId);
+    public void removeTriggering(JobTrigger jobTrigger) {
+        triggeringSet.remove(String.format("%s_%s", jobTrigger.getId(), jobTrigger.getNextFireTime().getTime()));
     }
 
-    public int triggeringSize() {
-        return triggeringSet.size();
+    public void setLastTriggerFireTime(Long jobTriggerId, Long lastFireTime) {
+        jobLastTriggerFireTimeMap.put(jobTriggerId, lastFireTime);
+    }
+
+    public long getLastTriggerFireTime(Long jobTriggerId) {
+        Long time = jobLastTriggerFireTimeMap.get(jobTriggerId);
+        return time == null ? 0 : time;
+    }
+
+    public void removeLastTriggerFireTime(Long jobTriggerId) {
+        jobLastTriggerFireTimeMap.remove(jobTriggerId);
     }
 }

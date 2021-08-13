@@ -621,14 +621,19 @@ public class TaskInstance {
             if (dbNow.compareTo(jobTrigger.getNextFireTime()) < 0) {
                 continue;
             }
+            // 同一秒不触发两次
+            if ((dbNow.getTime() / 1000) == (taskContext.getLastTriggerFireTime(jobTrigger.getId()) / 1000)) {
+                continue;
+            }
             // 判断是否正在触发
-            if (!taskContext.addTriggering(jobTrigger.getId())) {
+            if (!taskContext.addTriggering(jobTrigger)) {
                 continue;
             }
             try {
                 Future<?> future = schedulerWorker.submit(() -> {
                     final JobTriggerLog jobTriggerLog = newJobTriggerLog(jobTrigger);
                     jobTriggerLog.setFireCount(taskContext.incrementAndGetJobFireCount(jobTrigger.getId()));
+                    taskContext.setLastTriggerFireTime(jobTrigger.getId(), dbNow.getTime());
                     final long startFireTime = System.currentTimeMillis();
                     try {
                         doTriggerJobExec(dbNow, jobTrigger, jobTriggerLog);
@@ -656,7 +661,7 @@ public class TaskInstance {
                         schedulerLog.setEventInfo(SchedulerLog.EVENT_JOB_TRIGGER_FIRE_ERROR, ExceptionUtils.getStackTraceAsString(e));
                         schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
                     } finally {
-                        taskContext.removeTriggering(jobTrigger.getId());
+                        taskContext.removeTriggering(jobTrigger);
                     }
                 });
                 triggerFutureList.add(future);
