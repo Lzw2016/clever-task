@@ -29,7 +29,7 @@ public interface GlobalConstant {
     int CALC_NEXT_FIRE_TIME_INTERVAL = 300_000;
     // 维护当前集群可用的调度器列表的时间间隔(单位：毫秒)
     int RELOAD_SCHEDULER_INTERVAL = 5_000;
-    // 维护接下来N秒内需要触发的触发器列表的时间间隔(单位：毫秒)
+    // 维护接下来N秒内需要触发的触发器列表的时间间隔，建议：100 ~ 1000(单位：毫秒)
     int RELOAD_NEXT_TRIGGER_INTERVAL = 1_000;
     // 接下来N秒内需要触发的触发器列表(N = heartbeatInterval * NEXT_TRIGGER_N)
     int NEXT_TRIGGER_N = 2;

@@ -630,12 +630,25 @@ public class TaskInstance {
             }
             try {
                 Future<?> future = schedulerWorker.submit(() -> {
-                    final JobTriggerLog jobTriggerLog = newJobTriggerLog(jobTrigger);
+                    final JobTriggerLog jobTriggerLog = newJobTriggerLog(dbNow, jobTrigger);
                     jobTriggerLog.setFireCount(taskContext.incrementAndGetJobFireCount(jobTrigger.getId()));
                     taskContext.setLastTriggerFireTime(jobTrigger.getId(), dbNow.getTime());
                     final long startFireTime = System.currentTimeMillis();
                     try {
-                        doTriggerJobExec(dbNow, jobTrigger, jobTriggerLog);
+                        // 执行触发逻辑 - 是否允许多节点并行触发
+                        final boolean allowConcurrent = Objects.equals(EnumConstant.JOB_TRIGGER_ALLOW_CONCURRENT_1, jobTrigger.getAllowConcurrent());
+                        if (allowConcurrent) {
+                            doTriggerJobExec(dbNow, jobTrigger, jobTriggerLog);
+                        } else {
+                            taskStore.beginTX(status -> {
+                                // 获取触发器悲观锁 - 判断是否被其他节点触发了
+                                boolean lock = taskStore.getLockTrigger(jobTrigger.getNamespace(), jobTrigger.getId(), jobTrigger.getLockVersion());
+                                if (lock) {
+                                    doTriggerJobExec(dbNow, jobTrigger, jobTriggerLog);
+                                }
+                                return null;
+                            });
+                        }
                         // 是否在当前节点触发执行了任务
                         if (jobTriggerLog.getMisFired() == null) {
                             // 未触发 - 触发次数减1
@@ -648,13 +661,7 @@ public class TaskInstance {
                             schedulerWorker.execute(() -> this.jobTriggeredListener(jobTriggerLog));
                         }
                     } catch (Exception e) {
-                        log.error(
-                                "[TaskInstance] JobTrigger触发失败 | id={} name={} | instanceName={}",
-                                jobTrigger.getId(),
-                                jobTrigger.getName(),
-                                this.getInstanceName(),
-                                e
-                        );
+                        log.error("[TaskInstance] JobTrigger触发失败 | id={} | name={} | instanceName={}", jobTrigger.getId(), jobTrigger.getName(), this.getInstanceName(), e);
                         // 记录调度器日志(异步)
                         SchedulerLog schedulerLog = newSchedulerLog();
                         schedulerLog.setEventInfo(SchedulerLog.EVENT_JOB_TRIGGER_FIRE_ERROR, ExceptionUtils.getStackTraceAsString(e));
@@ -664,20 +671,9 @@ public class TaskInstance {
                     }
                 });
                 triggerFutureList.add(future);
-                log.debug(
-                        "[TaskInstance] JobTrigger触发完成 | id={} name={} | instanceName={}",
-                        jobTrigger.getId(),
-                        jobTrigger.getName(),
-                        this.getInstanceName()
-                );
+                log.debug("[TaskInstance] JobTrigger触发完成 | id={} | name={} | instanceName={}", jobTrigger.getId(), jobTrigger.getName(), this.getInstanceName());
             } catch (Exception e) {
-                log.error(
-                        "[TaskInstance] JobTrigger触发失败 | id={} name={} | instanceName={}",
-                        jobTrigger.getId(),
-                        jobTrigger.getName(),
-                        this.getInstanceName(),
-                        e
-                );
+                log.error("[TaskInstance] JobTrigger触发失败 | id={} | name={} | instanceName={}", jobTrigger.getId(), jobTrigger.getName(), this.getInstanceName(), e);
                 // 记录调度器日志(异步)
                 SchedulerLog schedulerLog = newSchedulerLog();
                 schedulerLog.setEventInfo(SchedulerLog.EVENT_TRIGGER_JOB_EXEC_ITEM_ERROR, ExceptionUtils.getStackTraceAsString(e));
@@ -713,39 +709,23 @@ public class TaskInstance {
     private void doTriggerJobExec(final Date dbNow, final JobTrigger jobTrigger, final JobTriggerLog jobTriggerLog) {
         final Job job = taskStore.beginReadOnlyTX(status -> taskStore.getJob(jobTrigger.getNamespace(), jobTrigger.getJobId()));
         if (job == null) {
-            throw new SchedulerException(String.format(
-                    "JobTrigger对应的Job数据不存在，JobTrigger(id=%s|jobId=%s)",
-                    jobTrigger.getId(), jobTrigger.getJobId()
-            ));
+            throw new SchedulerException(String.format("JobTrigger对应的Job数据不存在，JobTrigger(id=%s|jobId=%s)", jobTrigger.getId(), jobTrigger.getJobId()));
         }
-        // 1.控制并发执行 - 是否允许多节点并发执行
-        final boolean allowConcurrent = Objects.equals(EnumConstant.JOB_ALLOW_CONCURRENT_1, job.getAllowConcurrent());
-        if (!allowConcurrent) {
-            boolean lock = taskStore.beginTX(status -> taskStore.getLockTrigger(jobTrigger.getNamespace(), jobTrigger.getId(), jobTrigger.getLockVersion()));
-            // 未得到锁 - 判断是否被其他节点执行了
-            if (!lock) {
-                taskContext.removeNextJobTrigger(jobTrigger.getId());
-                return;
-            }
-        }
-        // 2.当前任务是否禁用
+        // 1.当前任务是否禁用
         if (!Objects.equals(job.getDisable(), EnumConstant.JOB_DISABLE_0)) {
             // 当前任务被禁用
             jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_1);
             jobTriggerLog.setTriggerMsg(String.format("当前任务被禁用，JobId=%s", job.getId()));
             return;
         }
+        // 2.控制重入执行 - 最大重入执行数量
         final int jobReentryCount = taskContext.getJobReentryCount(jobTrigger.getJobId());
-        // 3..控制重入执行 - 最大重入执行数量
-        if (jobReentryCount > Math.max(job.getMaxReentry(), 0)) {
+        if (jobReentryCount > Math.max((Objects.equals(EnumConstant.JOB_ALLOW_CONCURRENT_0, job.getAllowConcurrent()) ? 0 : job.getMaxReentry()), 0)) {
             jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_1);
-            jobTriggerLog.setTriggerMsg(String.format(
-                    "当前节点超过最大重入执行次数，JobId=%s | jobReentryCount=%s | maxReentry=%s",
-                    job.getId(), jobReentryCount, job.getMaxReentry()
-            ));
+            jobTriggerLog.setTriggerMsg(String.format("当前节点超过最大重入执行次数，JobId=%s | jobReentryCount=%s | maxReentry=%s", job.getId(), jobReentryCount, job.getMaxReentry()));
             return;
         }
-        // 4.控制任务执行节点 // TODO 暂不支持控制任务执行节点
+        // 3.控制任务执行节点 // TODO 暂不支持控制任务执行节点
         switch (job.getRouteStrategy()) {
             case EnumConstant.JOB_ROUTE_STRATEGY_1:
                 // 指定节点优先
@@ -757,7 +737,7 @@ public class TaskInstance {
                 // 固定节点黑名单
                 break;
         }
-        // 5.负载均衡策略 // TODO 暂不支持负载均衡策略
+        // 4.负载均衡策略 // TODO 暂不支持负载均衡策略
         switch (job.getLoadBalance()) {
             case EnumConstant.JOB_LOAD_BALANCE_1:
                 // 抢占
@@ -799,7 +779,30 @@ public class TaskInstance {
         if (needRunJob) {
             // 执行任务
             jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_0);
-            jobWorker.execute(() -> executeJob(dbNow, job, jobTrigger, jobTriggerLog.getId()));
+            jobWorker.execute(() -> {
+                final JobLog jobLog = newJobLog(dbNow, job, jobTrigger, jobTriggerLog.getId());
+                // 控制并发执行 - 是否允许多节点并发执行
+                final boolean allowConcurrent = Objects.equals(EnumConstant.JOB_ALLOW_CONCURRENT_1, job.getAllowConcurrent());
+                if (allowConcurrent) {
+                    executeJob(dbNow, job, jobLog);
+                } else {
+                    try {
+                        taskStore.beginTX(status -> {
+                            // 获取定时任务悲观锁 - 判断是否被其他节点执行了
+                            boolean lock = taskStore.getLockJob(job.getNamespace(), job.getId(), job.getLockVersion());
+                            if (lock) {
+                                executeJob(dbNow, job, jobLog);
+                            }
+                            return null;
+                        });
+                    } catch (Exception e) {
+                        log.error("[TaskInstance] Job执行失败 | id={} | name={} | instanceName={}", job.getId(), job.getName(), this.getInstanceName(), e);
+                        jobLog.setStatus(EnumConstant.JOB_LOG_STATUS_1);
+                        jobLog.setExceptionInfo(ExceptionUtils.getStackTraceAsString(e));
+                        jobEndRunListener(jobLog);
+                    }
+                }
+            });
         }
         // 计算下一次触发时间
         final Date newNextFireTime = JobTriggerUtils.getNextFireTime(dbNow, jobTrigger);
@@ -815,76 +818,13 @@ public class TaskInstance {
         } else {
             taskContext.putNextJobTrigger(newJobTrigger);
         }
-//        taskStore.beginTX(status -> {
-//            JobTrigger currentJobTrigger = jobTrigger;
-//            if (!allowConcurrent) {
-//                // 锁住JobTrigger - 获取最新的JobTrigger
-//                currentJobTrigger = taskStore.lockTriggerRow(jobTrigger.getNamespace(), jobTrigger.getId());
-//            }
-//            // 定时任务数据不存在了
-//            if (currentJobTrigger == null || currentJobTrigger.getNextFireTime() == null) {
-//                taskContext.removeNextJobTrigger(jobTrigger.getId());
-//                jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_1);
-//                jobTriggerLog.setTriggerMsg("触发器不存在或NextFireTime为null");
-//                return null;
-//            }
-//            // 判断是否被其他节点执行了
-//            if (dbNow.compareTo(currentJobTrigger.getNextFireTime()) < 0) {
-//                taskContext.putNextJobTrigger(currentJobTrigger);
-//                return null;
-//            }
-//            // 触发定时任务
-//            boolean needRunJob = true;
-//            Date lastFireTime = currentJobTrigger.getNextFireTime();
-//            // 判断是否错过了触发
-//            final Integer misfireStrategy = jobTrigger.getMisfireStrategy();
-//            if (JobTriggerUtils.isMisFire(dbNow, jobTrigger)) {
-//                needRunJob = false;
-//                // 需要补偿触发
-//                switch (misfireStrategy) {
-//                    case EnumConstant.JOB_TRIGGER_MISFIRE_STRATEGY_1:
-//                        // 忽略补偿触发
-//                        jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_1);
-//                        jobTriggerLog.setTriggerMsg(String.format("忽略补偿触发，JobId=%s", job.getId()));
-//                        break;
-//                    case EnumConstant.JOB_TRIGGER_MISFIRE_STRATEGY_2:
-//                        // 立即补偿触发一次
-//                        needRunJob = true;
-//                        lastFireTime = JobTriggerUtils.removeMillisecond(dbNow);
-//                        break;
-//                    default:
-//                        throw new SchedulerException(String.format("任务触发器misfireStrategy字段值错误，JobTrigger(id=%s)", jobTrigger.getId()));
-//                }
-//            }
-//            // 执行定时任务
-//            if (needRunJob) {
-//                // 执行任务
-//                jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_0);
-//                final JobTrigger jobTriggerTmp = currentJobTrigger;
-//                jobWorker.execute(() -> executeJob(dbNow, job, jobTriggerTmp, jobTriggerLog.getId()));
-//            }
-//            // 计算下一次触发时间
-//            final Date newNextFireTime = JobTriggerUtils.getNextFireTime(dbNow, currentJobTrigger);
-//            currentJobTrigger.setLastFireTime(lastFireTime);
-//            currentJobTrigger.setNextFireTime(newNextFireTime);
-//            taskStore.updateFireTime(currentJobTrigger);
-//            // 获取最新的JobTrigger
-//            currentJobTrigger = taskStore.getTrigger(currentJobTrigger.getNamespace(), currentJobTrigger.getId());
-//            if (currentJobTrigger == null) {
-//                taskContext.removeNextJobTrigger(jobTrigger.getId());
-//            } else {
-//                taskContext.putNextJobTrigger(currentJobTrigger);
-//            }
-//            return null;
-//        });
     }
 
     /**
      * 执行定时任务逻辑
      */
-    private void executeJob(final Date dbNow, final Job job, final JobTrigger jobTrigger, final Long jobTriggerLogId) {
+    private void executeJob(final Date dbNow, final Job job, final JobLog jobLog) {
         final Scheduler scheduler = taskContext.getCurrentScheduler();
-        final JobLog jobLog = newJobLog(job, jobTrigger, jobTriggerLogId);
         try {
             final int jobReentryCount = taskContext.getAndIncrementJobReentryCount(job.getId());
             final long jobRunCount = taskContext.incrementAndGetJobRunCount(job.getId());
@@ -892,10 +832,7 @@ public class TaskInstance {
             if (jobReentryCount > Math.max(job.getMaxReentry(), 0)) {
                 // 最大重入执行数量
                 jobLog.setStatus(EnumConstant.JOB_LOG_STATUS_2);
-                jobLog.setExceptionInfo(String.format(
-                        "当前节点超过最大重入执行次数 jobReentryCount=%s | maxReentry=%s",
-                        jobReentryCount, job.getMaxReentry()
-                ));
+                jobLog.setExceptionInfo(String.format("当前节点超过最大重入执行次数 jobReentryCount=%s | maxReentry=%s", jobReentryCount, job.getMaxReentry()));
                 return;
             }
             // 记录任务执行日志(同步)
@@ -923,14 +860,7 @@ public class TaskInstance {
                     jobLog.setStatus(EnumConstant.JOB_LOG_STATUS_0);
                     break;
                 } catch (Exception e) {
-                    log.error(
-                            "[TaskInstance] Job执行失败，重试次数：{} | id={} name={} | instanceName={}",
-                            retryCount,
-                            job.getId(),
-                            job.getName(),
-                            this.getInstanceName(),
-                            e
-                    );
+                    log.error("[TaskInstance] Job执行失败，重试次数：{} | id={} | name={} | instanceName={}", retryCount, job.getId(), job.getName(), this.getInstanceName(), e);
                     // 记录任务执行日志(同步)
                     final long endTime = System.currentTimeMillis();
                     jobLog.setRunTime((int) (endTime - startTime));
@@ -944,13 +874,7 @@ public class TaskInstance {
             jobLog.setRunTime((int) (endTime - startTime));
             jobLog.setAfterJobData(job.getJobData());
         } catch (Exception e) {
-            log.error(
-                    "[TaskInstance] Job执行失败 | id={} name={} | instanceName={}",
-                    job.getId(),
-                    job.getName(),
-                    this.getInstanceName(),
-                    e
-            );
+            log.error("[TaskInstance] Job执行失败 | id={} | name={} | instanceName={}", job.getId(), job.getName(), this.getInstanceName(), e);
             jobLog.setStatus(EnumConstant.JOB_LOG_STATUS_1);
             jobLog.setExceptionInfo(ExceptionUtils.getStackTraceAsString(e));
         } finally {
@@ -1130,7 +1054,7 @@ public class TaskInstance {
         return schedulerLog;
     }
 
-    private JobTriggerLog newJobTriggerLog(JobTrigger jobTrigger) {
+    private JobTriggerLog newJobTriggerLog(Date dbNow, JobTrigger jobTrigger) {
         final Scheduler scheduler = taskContext.getCurrentScheduler();
         JobTriggerLog jobTriggerLog = new JobTriggerLog();
         jobTriggerLog.setId(taskContext.getSnowFlake().nextId());
@@ -1139,13 +1063,14 @@ public class TaskInstance {
         jobTriggerLog.setJobTriggerId(jobTrigger.getId());
         jobTriggerLog.setJobId(jobTrigger.getJobId());
         jobTriggerLog.setTriggerName(jobTrigger.getName());
+        jobTriggerLog.setFireTime(dbNow);
         jobTriggerLog.setIsManual(EnumConstant.JOB_TRIGGER_IS_MANUAL_0);
         jobTriggerLog.setLastFireTime(jobTrigger.getLastFireTime());
         jobTriggerLog.setNextFireTime(jobTrigger.getNextFireTime());
         return jobTriggerLog;
     }
 
-    private JobLog newJobLog(Job job, JobTrigger jobTrigger, Long jobTriggerLogId) {
+    private JobLog newJobLog(Date dbNow, Job job, JobTrigger jobTrigger, Long jobTriggerLogId) {
         final Scheduler scheduler = taskContext.getCurrentScheduler();
         JobLog jobLog = new JobLog();
         jobLog.setNamespace(scheduler.getNamespace());
@@ -1153,6 +1078,7 @@ public class TaskInstance {
         jobLog.setJobTriggerLogId(jobTriggerLogId);
         jobLog.setJobTriggerId(jobTrigger.getId());
         jobLog.setJobId(job.getId());
+        jobLog.setFireTime(dbNow);
         jobLog.setRetryCount(0);
         jobLog.setBeforeJobData(job.getJobData());
         return jobLog;

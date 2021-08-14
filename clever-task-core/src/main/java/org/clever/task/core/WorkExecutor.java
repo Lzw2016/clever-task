@@ -38,7 +38,7 @@ public class WorkExecutor {
                 new LinkedBlockingQueue<>(workQueueCapacity),
                 new BasicThreadFactory.Builder()
                         .namingPattern(GlobalConstant.THREAD_POOL_NAME.getOrDefault(name, "work_executor-pool-%d"))
-                        .daemon(true)
+                        .daemon(false)
                         .build()
         );
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {

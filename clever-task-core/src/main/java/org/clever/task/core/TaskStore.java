@@ -204,6 +204,13 @@ public class TaskStore {
     }
 
     /**
+     * 获取定时任务悲观锁
+     */
+    public boolean getLockJob(String namespace, Long jobId, Long lockVersion) {
+        return jdbcTemplate.update(SqlConstant.GET_LOCK_JOB, jobId, namespace, lockVersion) > 0;
+    }
+
+    /**
      * 根据 namespace jobId 查询
      */
     public Job getJob(String namespace, Long jobId) {
@@ -279,23 +286,7 @@ public class TaskStore {
     }
 
     /**
-     * 获取触发器行级锁
-     */
-    public JobTrigger lockTriggerRow(String namespace, Long jobTriggerId) {
-        List<JobTrigger> jobTriggerList = jdbcTemplate.query(
-                SqlConstant.LOCK_TRIGGER_ROW,
-                DataClassRowMapper.newInstance(JobTrigger.class),
-                namespace,
-                jobTriggerId
-        );
-        if (jobTriggerList.isEmpty()) {
-            return null;
-        }
-        return jobTriggerList.get(0);
-    }
-
-    /**
-     * 获取触发器乐观锁
+     * 获取触发器悲观锁
      */
     public boolean getLockTrigger(String namespace, Long jobTriggerId, Long lockVersion) {
         return jdbcTemplate.update(SqlConstant.GET_LOCK_TRIGGER, jobTriggerId, namespace, lockVersion) > 0;

@@ -47,6 +47,11 @@ public class JobLog implements Serializable {
     private Long jobId;
 
     /**
+     * 触发时间
+     */
+    private Date fireTime;
+
+    /**
      * 开始执行时间
      */
     private Date startTime;

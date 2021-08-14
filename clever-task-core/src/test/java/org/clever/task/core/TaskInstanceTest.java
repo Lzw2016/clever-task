@@ -47,6 +47,8 @@ public class TaskInstanceTest {
 
     public static SchedulerConfig newSchedulerConfig(String instanceName) {
         SchedulerConfig config = new SchedulerConfig();
+        config.setSchedulerExecutorPoolSize(4);
+        config.setJobExecutorPoolSize(8);
         config.setNamespace("lzw");
         config.setInstanceName(instanceName);
         config.setDescription("测试节点01");

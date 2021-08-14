@@ -44,6 +44,11 @@ public class JobTriggerLog implements Serializable {
     private String triggerName;
 
     /**
+     * 触发时间
+     */
+    private Date fireTime;
+
+    /**
      * 是否是手动触发，0：系统自动触发，1：用户手动触发
      */
     private Integer isManual;

@@ -24,6 +24,15 @@ public interface EnumConstant {
     int JOB_TRIGGER_MIS_FIRED_1 = 1;
 
     /**
+     * 是否允许多节点并行触发，使用悲观锁实现，0：禁止，1：允许
+     */
+    int JOB_TRIGGER_ALLOW_CONCURRENT_0 = 0;
+    /**
+     * 是否允许多节点并行触发，使用悲观锁实现，0：禁止，1：允许
+     */
+    int JOB_TRIGGER_ALLOW_CONCURRENT_1 = 1;
+
+    /**
      * 任务类型，1：cron触发，2：固定速率触发
      */
     int JOB_TRIGGER_TYPE_1 = 1;
@@ -42,11 +51,11 @@ public interface EnumConstant {
     int JOB_TRIGGER_MISFIRE_STRATEGY_2 = 2;
 
     /**
-     * 是否允许多节点并发执行，0：禁止，1：允许
+     * 是否允许多节点并发执行，使用悲观锁实现，0：禁止，1：允许
      */
     int JOB_ALLOW_CONCURRENT_0 = 0;
     /**
-     * 是否允许多节点并发执行，0：禁止，1：允许
+     * 是否允许多节点并发执行，使用悲观锁实现，0：禁止，1：允许
      */
     int JOB_ALLOW_CONCURRENT_1 = 1;
 

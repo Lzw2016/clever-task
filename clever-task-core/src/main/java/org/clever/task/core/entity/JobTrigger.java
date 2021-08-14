@@ -59,7 +59,12 @@ public class JobTrigger implements Serializable {
     private Integer misfireStrategy;
 
     /**
-     * 乐观锁
+     * 是否允许多节点并行触发，使用悲观锁实现，0：禁止，1：允许
+     */
+    private Integer allowConcurrent;
+
+    /**
+     * 悲观锁
      */
     private Long lockVersion;
 

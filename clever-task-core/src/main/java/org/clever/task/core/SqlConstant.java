@@ -116,11 +116,11 @@ public interface SqlConstant {
             "where id=:id " +
             "and namespace=:namespace";
 
-    String LOCK_TRIGGER_ROW = "select * from job_trigger where namespace=? and id=? for update";
-
     String GET_LOCK_TRIGGER = "update job_trigger set lock_version=lock_version+1 where id=? and namespace=? and lock_version=?";
 
     // ---------------------------------------------------------------------------------------------------------------------------------------- job
+
+    String GET_LOCK_JOB = "update job set lock_version=lock_version+1 where id=? and namespace=? and lock_version=?";
 
     String GET_JOB_BY_ID = "select * from job where namespace=? and id=?";
 
@@ -140,15 +140,15 @@ public interface SqlConstant {
 
     String ADD_JOB_TRIGGER_LOG = "" +
             "insert into job_trigger_log " +
-            "(id, namespace, instance_name, job_trigger_id, job_id, trigger_name, is_manual, trigger_time, last_fire_time, next_fire_time, fire_count, mis_fired, trigger_msg) " +
+            "(id, namespace, instance_name, job_trigger_id, job_id, trigger_name, fire_time, is_manual, trigger_time, last_fire_time, next_fire_time, fire_count, mis_fired, trigger_msg) " +
             "values " +
-            "(:id, :namespace, :instanceName, :jobTriggerId, :jobId, :triggerName, :isManual, :triggerTime, :lastFireTime, :nextFireTime, :fireCount, :misFired, :triggerMsg)";
+            "(:id, :namespace, :instanceName, :jobTriggerId, :jobId, :triggerName, :fireTime, :isManual, :triggerTime, :lastFireTime, :nextFireTime, :fireCount, :misFired, :triggerMsg)";
 
     String ADD_JOB_LOG = "" +
             "insert into job_log " +
-            "(namespace, instance_name, job_trigger_log_id, job_trigger_id, job_id, start_time, retry_count, run_count, before_job_data) " +
+            "(namespace, instance_name, job_trigger_log_id, job_trigger_id, job_id, fire_time, start_time, retry_count, run_count, before_job_data) " +
             "values " +
-            "(:namespace, :instanceName, :jobTriggerLogId, :jobTriggerId, :jobId, now(3), :retryCount, :runCount, :beforeJobData)";
+            "(:namespace, :instanceName, :jobTriggerLogId, :jobTriggerId, :jobId, :fireTime, now(3), :retryCount, :runCount, :beforeJobData)";
 
     String UPDATE_JOB_LOG_BY_END = "" +
             "update job_log " +
