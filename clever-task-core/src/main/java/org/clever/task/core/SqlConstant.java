@@ -63,7 +63,7 @@ public interface SqlConstant {
             "and (end_time is null or end_time>=now(3)) " +
             "and next_fire_time is not null " +
             "and unix_timestamp(next_fire_time)-unix_timestamp(now(3))<=? " +
-            "order by next_fire_time limit 2000";
+            "order by next_fire_time limit 1200";
 
     String GET_TRIGGER = "" +
             "select * from job_trigger " +
