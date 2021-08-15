@@ -740,7 +740,7 @@ public class TaskInstance {
         final int size = nextJobTriggerList.size();
         // 同一秒触发任务过多打印警告
         if (size > GlobalConstant.NEXT_TRIGGER_MAX_COUNT) {
-            log.warn("[TaskInstance] 接下来{}秒内需要触发的触发器列表最大值数：{}，任务数：{} | instanceName={}", nextTime, GlobalConstant.NEXT_TRIGGER_MAX_COUNT, size, this.getInstanceName());
+            log.warn("[TaskInstance] 超过接下来{}秒内需要触发的触发器列表最大值：{}，当前值：{} | instanceName={}", nextTime, GlobalConstant.NEXT_TRIGGER_MAX_COUNT, size, this.getInstanceName());
         }
         taskContext.setNextJobTriggerMap(nextJobTriggerList);
     }

@@ -9,14 +9,13 @@ import org.clever.task.core.entity.Scheduler;
 import org.clever.task.core.utils.SnowFlake;
 
 import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 /**
  * 定时任务调度器上下文
@@ -49,7 +48,11 @@ public class TaskContext {
     /**
      * 接下来N秒内需要触发的触发器列表(N = heartbeatInterval * NEXT_TRIGGER_INTERVAL) {@code ConcurrentMap<jobTriggerId, JobTrigger>}
      */
-    private volatile ConcurrentMap<Long, JobTrigger> nextJobTriggerMap;
+    private final LinkedHashMap<Long, JobTrigger> nextJobTriggerMap = new LinkedHashMap<>(GlobalConstant.INITIAL_CAPACITY);
+    /**
+     * NextJobTriggerMap对象读写锁
+     */
+    private final Object nextJobTriggerMapLock = new Object();
     /**
      * 正在触发的触发器ID {@code Set<jobTriggerId + nextFireTime>}
      */
@@ -78,24 +81,28 @@ public class TaskContext {
     }
 
     public void setNextJobTriggerMap(List<JobTrigger> nextJobTriggerList) {
-        ConcurrentMap<Long, JobTrigger> nextJobTriggerMap = new ConcurrentHashMap<>(nextJobTriggerList.size());
-        nextJobTriggerList.forEach(jobTrigger -> nextJobTriggerMap.put(jobTrigger.getId(), jobTrigger));
-        this.nextJobTriggerMap = nextJobTriggerMap;
+        synchronized (nextJobTriggerMapLock) {
+            nextJobTriggerMap.clear();
+            nextJobTriggerList.forEach(jobTrigger -> nextJobTriggerMap.put(jobTrigger.getId(), jobTrigger));
+        }
     }
 
     public List<JobTrigger> getNextJobTriggerList() {
-        if (nextJobTriggerMap == null) {
-            return new ArrayList<>();
+        synchronized (nextJobTriggerMapLock) {
+            return new ArrayList<>(nextJobTriggerMap.values());
         }
-        return nextJobTriggerMap.values().stream().sorted(Comparator.comparing(JobTrigger::getNextFireTime)).collect(Collectors.toList());
     }
 
     public void removeNextJobTrigger(Long jobTriggerId) {
-        nextJobTriggerMap.remove(jobTriggerId);
+        synchronized (nextJobTriggerMapLock) {
+            nextJobTriggerMap.remove(jobTriggerId);
+        }
     }
 
     public void putNextJobTrigger(JobTrigger jobTrigger) {
-        nextJobTriggerMap.put(jobTrigger.getId(), jobTrigger);
+        synchronized (nextJobTriggerMapLock) {
+            nextJobTriggerMap.put(jobTrigger.getId(), jobTrigger);
+        }
     }
 
     public int getJobReentryCount(Long jobId) {
