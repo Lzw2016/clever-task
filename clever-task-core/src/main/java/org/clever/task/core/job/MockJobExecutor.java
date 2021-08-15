@@ -8,6 +8,7 @@ import org.clever.task.core.entity.Scheduler;
 import org.clever.task.core.utils.DateTimeUtils;
 
 import java.util.Date;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * 作者：lizw <br/>
@@ -15,6 +16,8 @@ import java.util.Date;
  */
 @Slf4j
 public class MockJobExecutor implements JobExecutor {
+    private final AtomicLong count = new AtomicLong(0);
+
     @Override
     public boolean support(int jobType) {
         return true;
@@ -28,6 +31,8 @@ public class MockJobExecutor implements JobExecutor {
     @Override
     public void exec(Date dbNow, Job job, Scheduler scheduler, TaskStore taskStore) throws Exception {
         // Thread.sleep(4_500);
-        log.info("#### ---> 模拟执行定时任务 | name={} | time={}", job.getName(), DateTimeUtils.formatToString(dbNow, "HH:mm:ss.SSS"));
+        if (count.incrementAndGet() % 1000 == 0) {
+            log.info("#### ---> 模拟执行定时任务 | name={} | time={}", job.getName(), DateTimeUtils.formatToString(dbNow, "HH:mm:ss.SSS"));
+        }
     }
 }

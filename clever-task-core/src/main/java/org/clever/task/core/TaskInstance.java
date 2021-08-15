@@ -298,6 +298,8 @@ public class TaskInstance {
                             try {
                                 hasPermit = schedulerCoordinator.tryAcquire(GlobalConstant.RELOAD_NEXT_TRIGGER_INTERVAL, TimeUnit.MILLISECONDS);
                                 reloadNextTrigger();
+                            } catch (InterruptedException e) {
+                                log.warn("[TaskInstance] 维护接下来N秒内需要触发的触发器列表被中断 | instanceName={}", this.getInstanceName());
                             } catch (Exception e) {
                                 log.error("[TaskInstance] 维护接下来N秒内需要触发的触发器列表失败 | instanceName={}", this.getInstanceName(), e);
                                 // 记录调度器日志(异步)
@@ -319,6 +321,8 @@ public class TaskInstance {
                             try {
                                 hasPermit = schedulerCoordinator.tryAcquire(GlobalConstant.TRIGGER_JOB_EXEC_MAX_INTERVAL, TimeUnit.MILLISECONDS);
                                 triggerJobExec();
+                            } catch (InterruptedException e) {
+                                log.warn("[TaskInstance] 调度器轮询任务被中断 | instanceName={}", this.getInstanceName());
                             } catch (Exception e) {
                                 log.error("[TaskInstance] 调度器轮询任务失败 | instanceName={}", this.getInstanceName(), e);
                                 // 记录调度器日志(异步)

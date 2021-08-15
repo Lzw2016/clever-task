@@ -12,10 +12,7 @@ import org.clever.task.core.job.MockJobExecutor;
 import org.clever.task.core.listeners.JobLogListener;
 import org.clever.task.core.listeners.JobTriggerLogListener;
 import org.clever.task.core.listeners.SchedulerLogListener;
-import org.clever.task.core.model.AbstractJob;
-import org.clever.task.core.model.AbstractTrigger;
-import org.clever.task.core.model.CronTrigger;
-import org.clever.task.core.model.JsJobModel;
+import org.clever.task.core.model.*;
 import org.junit.jupiter.api.Test;
 
 import java.text.ParseException;
@@ -71,7 +68,9 @@ public class TaskInstanceTest {
                 Collections.singletonList(new JobLogListener())
         );
         taskInstance.start();
-        Thread.sleep(1000 * 60 * 10);
+        Thread.sleep(1000 * 60 * 2);
+        taskInstance.pause();
+        Thread.sleep(1000 * 30);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 Thread.sleep(8_000);
@@ -117,12 +116,40 @@ public class TaskInstanceTest {
                 Collections.singletonList(new JobTriggerLogListener()),
                 Collections.singletonList(new JobLogListener())
         );
-        final int addCount = 1000;
+        final int addCount = 1_000;
         for (int i = 0; i < addCount; i++) {
             AbstractJob jobModel = new JsJobModel(String.format("test_%s", i), "\nconsole.log('测试!!!');\n");
             jobModel.setAllowConcurrent(EnumConstant.JOB_ALLOW_CONCURRENT_0);
             AbstractTrigger trigger = new CronTrigger(String.format("test_trigger_%s", i), "0/1 * * * * ? *");
             taskInstance.addJob(jobModel, trigger);
+        }
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                Thread.sleep(1_000);
+            } catch (InterruptedException ignored) {
+            }
+            dataSource.close();
+        }));
+    }
+
+    @Test
+    public void t11() throws InterruptedException {
+        HikariDataSource dataSource = newDataSource();
+        TaskInstance taskInstance = new TaskInstance(
+                dataSource,
+                newSchedulerConfig("n01"),
+                Arrays.asList(new MockJobExecutor(), new HttpJobExecutor()),
+                Collections.singletonList(new SchedulerLogListener()),
+                Collections.singletonList(new JobTriggerLogListener()),
+                Collections.singletonList(new JobLogListener())
+        );
+        final int addCount = 5_000;
+        for (int i = 0; i < addCount; i++) {
+            AbstractJob jobModel = new JsJobModel(String.format("test_%s", i), "\nconsole.log('测试!!!');\n");
+            jobModel.setAllowConcurrent(EnumConstant.JOB_ALLOW_CONCURRENT_0);
+            AbstractTrigger trigger = new FixedIntervalTrigger(String.format("test_trigger_%s", i), 10L);
+            taskInstance.addJob(jobModel, trigger);
+            Thread.sleep(10);
         }
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {

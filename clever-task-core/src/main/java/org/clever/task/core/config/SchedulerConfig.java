@@ -41,5 +41,5 @@ public class SchedulerConfig implements Serializable {
     /**
      * 最大并发任务数(大于等于jobExecutorPoolSize值)
      */
-    private int maxConcurrent = 2048;
+    private int maxConcurrent = 10240;
 }
