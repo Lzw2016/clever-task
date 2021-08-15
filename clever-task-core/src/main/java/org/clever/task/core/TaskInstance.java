@@ -735,8 +735,13 @@ public class TaskInstance {
      */
     private void reloadNextTrigger() {
         final Scheduler scheduler = taskContext.getCurrentScheduler();
-        final long nextTime = GlobalConstant.RELOAD_NEXT_TRIGGER_INTERVAL * GlobalConstant.NEXT_TRIGGER_N;
+        final Double nextTime = GlobalConstant.RELOAD_NEXT_TRIGGER_INTERVAL * GlobalConstant.NEXT_TRIGGER_N / 1000.0;
         final List<JobTrigger> nextJobTriggerList = taskStore.beginReadOnlyTX(status -> taskStore.queryNextTrigger(scheduler.getNamespace(), nextTime));
+        final int size = nextJobTriggerList.size();
+        // 同一秒触发任务过多打印警告
+        if (size > GlobalConstant.NEXT_TRIGGER_MAX_COUNT) {
+            log.warn("[TaskInstance] 接下来{}秒内需要触发的触发器列表最大值数：{}，任务数：{} | instanceName={}", nextTime, GlobalConstant.NEXT_TRIGGER_MAX_COUNT, size, this.getInstanceName());
+        }
         taskContext.setNextJobTriggerMap(nextJobTriggerList);
     }
 

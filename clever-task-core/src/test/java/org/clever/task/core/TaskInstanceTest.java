@@ -143,13 +143,15 @@ public class TaskInstanceTest {
                 Collections.singletonList(new JobTriggerLogListener()),
                 Collections.singletonList(new JobLogListener())
         );
-        final int addCount = 5_000;
+        final int addCount = 3_000;
         for (int i = 0; i < addCount; i++) {
             AbstractJob jobModel = new JsJobModel(String.format("test_%s", i), "\nconsole.log('测试!!!');\n");
             jobModel.setAllowConcurrent(EnumConstant.JOB_ALLOW_CONCURRENT_0);
             AbstractTrigger trigger = new FixedIntervalTrigger(String.format("test_trigger_%s", i), 10L);
             taskInstance.addJob(jobModel, trigger);
-            Thread.sleep(10);
+            if (i % 30 == 0) {
+                Thread.sleep(100);
+            }
         }
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {

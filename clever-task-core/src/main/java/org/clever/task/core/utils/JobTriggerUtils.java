@@ -93,8 +93,10 @@ public class JobTriggerUtils {
                 if (jobTrigger.getFixedInterval() == null || jobTrigger.getFixedInterval() <= 0) {
                     throw new SchedulerException(String.format("任务触发器fixedInterval字段值错误，JobTrigger(id=%s)", jobTrigger.getId()));
                 }
-                nextFireTime = dbNow.compareTo(jobTrigger.getNextFireTime()) > 0 ? dbNow : jobTrigger.getNextFireTime();
-                nextFireTime = new Date(nextFireTime.getTime() + (jobTrigger.getFixedInterval() * 1000));
+                final long howLong = Math.abs(dbNow.getTime() - jobTrigger.getNextFireTime().getTime());
+                final long fixedInterval = jobTrigger.getFixedInterval() * 1000;
+                final long time = Math.max(dbNow.getTime(), jobTrigger.getNextFireTime().getTime()) - (howLong % fixedInterval) + fixedInterval;
+                nextFireTime = new Date(time);
                 break;
             default:
                 throw new SchedulerException(String.format("任务触发器type字段值错误，JobTrigger(id=%s)", jobTrigger.getId()));

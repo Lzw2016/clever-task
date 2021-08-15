@@ -181,7 +181,7 @@ public class TaskStore {
     /**
      * 接下来N秒内需要触发的触发器列表
      */
-    public List<JobTrigger> queryNextTrigger(String namespace, Long nextTime) {
+    public List<JobTrigger> queryNextTrigger(String namespace, Double nextTime) {
         return jdbcTemplate.query(
                 SqlConstant.QUERY_NEXT_TRIGGER,
                 DataClassRowMapper.newInstance(JobTrigger.class),
