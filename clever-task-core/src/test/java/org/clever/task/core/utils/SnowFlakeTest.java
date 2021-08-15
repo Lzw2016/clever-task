@@ -38,6 +38,8 @@ public class SnowFlakeTest {
         log.info("-> {}", map.values());
         map.remove("4");
         log.info("-> {}", map.values());
+        map.put("3", "3ccc");
+        log.info("-> {}", map.values());
     }
 
     @Test
