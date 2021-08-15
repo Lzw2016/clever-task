@@ -1,0 +1,71 @@
+package org.clever.task.core.entity;
+
+import lombok.Data;
+
+import java.io.Serializable;
+import java.util.Date;
+
+/**
+ * 资源文件(FileResource)实体类
+ *
+ * @author lizw
+ * @since 2021-08-15 13:20:52
+ */
+@Data
+public class FileResource implements Serializable {
+    private static final long serialVersionUID = 644401840726744702L;
+    /**
+     * 主键id
+     */
+    private Long id;
+
+    /**
+     * 命名空间
+     */
+    private String namespace;
+
+    /**
+     * 所属模块：0-自定义扩展，1-资源文件，2-初始化脚本，3-HTTP API，4-定时任务
+     */
+    private Integer module;
+
+    /**
+     * 文件路径(以"/"结束)
+     */
+    private String path;
+
+    /**
+     * 文件名称
+     */
+    private String name;
+
+    /**
+     * 文件内容
+     */
+    private String content;
+
+    /**
+     * 数据类型：0-文件夹，1-文件
+     */
+    private Integer isFile;
+
+    /**
+     * 读写权限：0-可读可写，1-只读
+     */
+    private Integer readOnly;
+
+    /**
+     * 说明
+     */
+    private String description;
+
+    /**
+     * 创建时间
+     */
+    private Date createAt;
+
+    /**
+     * 更新时间
+     */
+    private Date updateAt;
+}

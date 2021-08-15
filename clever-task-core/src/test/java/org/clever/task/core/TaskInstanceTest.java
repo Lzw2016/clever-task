@@ -6,11 +6,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.clever.task.core.config.SchedulerConfig;
 import org.clever.task.core.cron.CronExpression;
 import org.clever.task.core.cron.CronExpressionUtil;
+import org.clever.task.core.entity.EnumConstant;
 import org.clever.task.core.job.HttpJobExecutor;
 import org.clever.task.core.job.MockJobExecutor;
 import org.clever.task.core.listeners.JobLogListener;
 import org.clever.task.core.listeners.JobTriggerLogListener;
 import org.clever.task.core.listeners.SchedulerLogListener;
+import org.clever.task.core.model.AbstractJob;
+import org.clever.task.core.model.AbstractTrigger;
+import org.clever.task.core.model.CronTrigger;
+import org.clever.task.core.model.JsJobModel;
 import org.junit.jupiter.api.Test;
 
 import java.text.ParseException;
@@ -99,6 +104,33 @@ public class TaskInstanceTest {
     @Test
     public void t05() throws InterruptedException {
         startTaskInstance("n05");
+    }
+
+    @Test
+    public void t10() {
+        HikariDataSource dataSource = newDataSource();
+        TaskInstance taskInstance = new TaskInstance(
+                dataSource,
+                newSchedulerConfig("n01"),
+                Arrays.asList(new MockJobExecutor(), new HttpJobExecutor()),
+                Collections.singletonList(new SchedulerLogListener()),
+                Collections.singletonList(new JobTriggerLogListener()),
+                Collections.singletonList(new JobLogListener())
+        );
+        final int addCount = 1000;
+        for (int i = 0; i < addCount; i++) {
+            AbstractJob jobModel = new JsJobModel(String.format("test_%s", i), "\nconsole.log('测试!!!');\n");
+            jobModel.setAllowConcurrent(EnumConstant.JOB_ALLOW_CONCURRENT_0);
+            AbstractTrigger trigger = new CronTrigger(String.format("test_trigger_%s", i), "0/1 * * * * ? *");
+            taskInstance.addJob(jobModel, trigger);
+        }
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                Thread.sleep(1_000);
+            } catch (InterruptedException ignored) {
+            }
+            dataSource.close();
+        }));
     }
 
     @Test

@@ -6,13 +6,14 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
- * js脚本任务(JavaJob)实体类
+ * js脚本任务(ShellJob)实体类
  *
  * @author lizw
- * @since 2021-08-01 20:33:31
+ * @since 2021-08-15 13:09:32
  */
 @Data
-public class JavaJob implements Serializable {
+public class ShellJob implements Serializable {
+    private static final long serialVersionUID = -10214801187263077L;
     /**
      * 主键id
      */
@@ -29,19 +30,9 @@ public class JavaJob implements Serializable {
     private Long jobId;
 
     /**
-     * 是否是静态方法(函数)，0：非静态，1：静态
+     * shell文件id
      */
-    private Integer isStatic;
-
-    /**
-     * java class全路径
-     */
-    private String className;
-
-    /**
-     * java class method
-     */
-    private String classMethod;
+    private Long fileResourceId;
 
     /**
      * 创建时间
@@ -52,4 +43,5 @@ public class JavaJob implements Serializable {
      * 更新时间
      */
     private Date updateAt;
+
 }

@@ -145,4 +145,11 @@ public class JobTriggerUtils {
         }
         return date;
     }
+
+    public static Date nextSecond(Date date) {
+        if (date != null) {
+            date = new Date(date.getTime() - (date.getTime() % 1000) + 3000);
+        }
+        return date;
+    }
 }

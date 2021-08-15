@@ -4,9 +4,11 @@ import lombok.Getter;
 import org.clever.task.core.entity.*;
 import org.clever.task.core.exception.SchedulerException;
 import org.clever.task.core.model.SchedulerInfo;
+import org.clever.task.core.utils.SqlUtils;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
@@ -19,6 +21,7 @@ import org.springframework.util.Assert;
 import javax.sql.DataSource;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -318,21 +321,86 @@ public class TaskStore {
         return namedParameterJdbcTemplate.update(SqlConstant.UPDATE_JOB_LOG_BY_RETRY, new BeanPropertySqlParameterSource(jobLog));
     }
 
-//    /**
-//     * 根据JobId查询脚本文件
-//     */
-//    private FileResource getFileResourceByJobId(String namespace, Long jobId) {
-//        List<FileResource> jobTriggerList = jdbcTemplate.query(
-//                SqlConstant.GET_FILE_RESOURCE_BY_JOB_ID,
-//                DataClassRowMapper.newInstance(FileResource.class),
-//                jobId,
-//                namespace
-//        );
-//        if (jobTriggerList.isEmpty()) {
-//            return null;
-//        }
-//        return jobTriggerList.get(0);
-//    }
+    // ---------------------------------------------------------------------------------------------------------------------------------------- manage
+
+    public int addJob(Job job) {
+        final Map<String, Object> paramMap = SqlUtils.toMap(job);
+        final String sql = SqlUtils.insertSql(SqlConstant.JOB_TABLE_NAME, paramMap, true);
+        GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+        int count = namedParameterJdbcTemplate.update(sql, new MapSqlParameterSource(paramMap), keyHolder);
+        job.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
+        return count;
+    }
+
+    public int addJobTrigger(JobTrigger jobTrigger) {
+        final Map<String, Object> paramMap = SqlUtils.toMap(jobTrigger);
+        final String sql = SqlUtils.insertSql(SqlConstant.JOB_TRIGGER_TABLE_NAME, paramMap, true);
+        GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+        int count = namedParameterJdbcTemplate.update(sql, new MapSqlParameterSource(paramMap), keyHolder);
+        jobTrigger.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
+        return count;
+    }
+
+    public int addHttpJob(HttpJob httpJob) {
+        final Map<String, Object> paramMap = SqlUtils.toMap(httpJob);
+        final String sql = SqlUtils.insertSql(SqlConstant.HTTP_JOB_TABLE_NAME, paramMap, true);
+        GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+        int count = namedParameterJdbcTemplate.update(sql, new MapSqlParameterSource(paramMap), keyHolder);
+        httpJob.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
+        return count;
+    }
+
+    public int addJavaJob(JavaJob javaJob) {
+        final Map<String, Object> paramMap = SqlUtils.toMap(javaJob);
+        final String sql = SqlUtils.insertSql(SqlConstant.JAVA_JOB_TABLE_NAME, paramMap, true);
+        GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+        int count = namedParameterJdbcTemplate.update(sql, new MapSqlParameterSource(paramMap), keyHolder);
+        javaJob.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
+        return count;
+    }
+
+    public int addFileResource(FileResource fileResource) {
+        final Map<String, Object> paramMap = SqlUtils.toMap(fileResource);
+        final String sql = SqlUtils.insertSql(SqlConstant.FILE_RESOURCE_TABLE_NAME, paramMap, true);
+        GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+        int count = namedParameterJdbcTemplate.update(sql, new MapSqlParameterSource(paramMap), keyHolder);
+        fileResource.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
+        return count;
+    }
+
+    public int addJsJob(JsJob jsJob) {
+        final Map<String, Object> paramMap = SqlUtils.toMap(jsJob);
+        final String sql = SqlUtils.insertSql(SqlConstant.JS_JOB_TABLE_NAME, paramMap, true);
+        GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+        int count = namedParameterJdbcTemplate.update(sql, new MapSqlParameterSource(paramMap), keyHolder);
+        jsJob.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
+        return count;
+    }
+
+    public int addShellJob(ShellJob shellJob) {
+        final Map<String, Object> paramMap = SqlUtils.toMap(shellJob);
+        final String sql = SqlUtils.insertSql(SqlConstant.SHELL_JOB_TABLE_NAME, paramMap, true);
+        GeneratedKeyHolder keyHolder = new GeneratedKeyHolder();
+        int count = namedParameterJdbcTemplate.update(sql, new MapSqlParameterSource(paramMap), keyHolder);
+        shellJob.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
+        return count;
+    }
+
+    /**
+     * 根据JobId查询脚本文件
+     */
+    private FileResource getFileResourceByJobId(String namespace, Long jobId) {
+        List<FileResource> jobTriggerList = jdbcTemplate.query(
+                SqlConstant.GET_FILE_RESOURCE_BY_JOB_ID,
+                DataClassRowMapper.newInstance(FileResource.class),
+                jobId,
+                namespace
+        );
+        if (jobTriggerList.isEmpty()) {
+            return null;
+        }
+        return jobTriggerList.get(0);
+    }
 
     // ---------------------------------------------------------------------------------------------------------------------------------------- transaction support
 

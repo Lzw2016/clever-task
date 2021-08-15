@@ -15,13 +15,13 @@ public interface SqlConstant {
 
     String ADD_SCHEDULER = "" +
             "insert into scheduler " +
-            "(namespace, instance_name, heartbeat_interval, config, description) " +
+            "(namespace, instance_name, last_heartbeat_time, heartbeat_interval, config, description) " +
             "VALUES " +
-            "(:namespace, :instanceName, :heartbeatInterval, :config, :description)";
+            "(:namespace, :instanceName, now(3), :heartbeatInterval, :config, :description)";
 
     String UPDATE_SCHEDULER = "" +
             "update scheduler " +
-            "set heartbeat_interval=:heartbeatInterval, config=:config, description=:description " +
+            "set last_heartbeat_time=now(3), heartbeat_interval=:heartbeatInterval, config=:config, description=:description " +
             "where namespace=:namespace and instance_name=:instanceName";
 
     String HEARTBEAT_SCHEDULER = "" +
@@ -43,6 +43,8 @@ public interface SqlConstant {
             "where namespace=? ";
 
     // ---------------------------------------------------------------------------------------------------------------------------------------- job_trigger
+
+    String JOB_TRIGGER_TABLE_NAME = "job_trigger";
 
     String QUERY_ENABLE_TRIGGER = "select * from job_trigger " +
             "where disable=0 " +
@@ -120,11 +122,29 @@ public interface SqlConstant {
 
     // ---------------------------------------------------------------------------------------------------------------------------------------- job
 
+    String JOB_TABLE_NAME = "job";
+
     String GET_LOCK_JOB = "update job set lock_version=lock_version+1 where id=? and namespace=? and lock_version=?";
 
     String GET_JOB_BY_ID = "select * from job where namespace=? and id=?";
 
     String QUERY_ALL_JOB = "select * from job where namespace=?";
+
+    // ---------------------------------------------------------------------------------------------------------------------------------------- http_job
+
+    String HTTP_JOB_TABLE_NAME = "http_job";
+
+    // ---------------------------------------------------------------------------------------------------------------------------------------- java_job
+
+    String JAVA_JOB_TABLE_NAME = "java_job";
+
+    // ---------------------------------------------------------------------------------------------------------------------------------------- js_job
+
+    String JS_JOB_TABLE_NAME = "js_job";
+
+    // ---------------------------------------------------------------------------------------------------------------------------------------- shell_job
+
+    String SHELL_JOB_TABLE_NAME = "shell_job";
 
     // ---------------------------------------------------------------------------------------------------------------------------------------- xxx_job
 
@@ -161,6 +181,8 @@ public interface SqlConstant {
             "where namespace=:namespace and id=:id";
 
     // ---------------------------------------------------------------------------------------------------------------------------------------- file_resource
+
+    String FILE_RESOURCE_TABLE_NAME = "file_resource";
 
     String GET_FILE_RESOURCE_BY_JOB_ID = "" +
             "select " +

@@ -8,7 +8,7 @@ import org.clever.task.core.exception.SchedulerException;
 import org.clever.task.core.listeners.JobListener;
 import org.clever.task.core.listeners.JobTriggerListener;
 import org.clever.task.core.listeners.SchedulerListener;
-import org.clever.task.core.model.SchedulerInfo;
+import org.clever.task.core.model.*;
 import org.clever.task.core.utils.ExceptionUtils;
 import org.clever.task.core.utils.JacksonMapper;
 import org.clever.task.core.utils.JobTriggerUtils;
@@ -400,66 +400,178 @@ public class TaskInstance {
         }
     }
 
-//    /**
-//     * 增加定时任务
-//     */
-//    public void addJob() {
-//    }
-//
-//    /**
-//     *
-//     */
-//    public void addJobs() {
-//    }
-//
-//    /**
-//     *
-//     */
-//    public void disableJob() {
-//    }
-//
-//    /**
-//     *
-//     */
-//    public void disableJobs() {
-//    }
-//
-//    /**
-//     *
-//     */
-//    public void enableJob() {
-//    }
-//
-//    /**
-//     *
-//     */
-//    public void enableJobs() {
-//    }
-//
-//    /**
-//     *
-//     */
-//    public void deleteJob() {
-//    }
-//
-//    /**
-//     *
-//     */
-//    public void deleteJobs() {
-//    }
-//
-//    /**
-//     *
-//     */
-//    public void triggerJob() {
-//    }
-//
-//    /**
-//     *
-//     */
-//    public void triggerJobs() {
-//    }
-//
+    /**
+     * 增加定时任务
+     */
+    public void addJob(AbstractJob jobModel, AbstractTrigger trigger) {
+        Assert.notNull(jobModel, "参数jobModel不能为空");
+        Assert.notNull(trigger, "参数trigger不能为空");
+        final Scheduler scheduler = taskContext.getCurrentScheduler();
+        final Job job = jobModel.toJob();
+        job.setNamespace(scheduler.getNamespace());
+        final JobTrigger jobTrigger = trigger.toJobTrigger();
+        jobTrigger.setNamespace(scheduler.getNamespace());
+        taskStore.beginTX(status -> {
+            int count = 0;
+            final Date dbNow = taskStore.getDataSourceNow();
+            // 新增 job
+            count += taskStore.addJob(job);
+            // 新增 job_trigger
+            jobTrigger.setJobId(job.getId());
+            if (jobTrigger.getStartTime() == null || jobTrigger.getStartTime().compareTo(dbNow) < 0) {
+                jobTrigger.setStartTime(JobTriggerUtils.nextSecond(dbNow));
+            }
+            final Date nextFireTime = JobTriggerUtils.getNextFireTime(jobTrigger);
+            jobTrigger.setNextFireTime(nextFireTime);
+            count += taskStore.addJobTrigger(jobTrigger);
+            if (jobModel instanceof HttpJobModel) {
+                // 新增 http_job
+                HttpJobModel httpJobModel = (HttpJobModel) jobModel;
+                HttpJob httpJob = httpJobModel.toJobEntity();
+                httpJob.setNamespace(scheduler.getNamespace());
+                httpJob.setJobId(job.getId());
+                count += taskStore.addHttpJob(httpJob);
+            } else if (jobModel instanceof JavaJobModel) {
+                // 新增 java_job
+                JavaJobModel javaJobModel = (JavaJobModel) jobModel;
+                JavaJob javaJob = javaJobModel.toJobEntity();
+                javaJob.setNamespace(scheduler.getNamespace());
+                javaJob.setJobId(job.getId());
+                count += taskStore.addJavaJob(javaJob);
+            } else if (jobModel instanceof JsJobModel) {
+                // 新增 file_resource
+                // 新增 js_job
+                JsJobModel javaJobModel = (JsJobModel) jobModel;
+                FileResource fileResource = javaJobModel.toFileResource();
+                fileResource.setNamespace(scheduler.getNamespace());
+                count += taskStore.addFileResource(fileResource);
+                JsJob jsJob = javaJobModel.toJobEntity();
+                jsJob.setNamespace(scheduler.getNamespace());
+                jsJob.setJobId(job.getId());
+                jsJob.setFileResourceId(fileResource.getId());
+                count += taskStore.addJsJob(jsJob);
+            } else if (jobModel instanceof ShellJobModel) {
+                // 新增 file_resource
+                // 新增 shell_job
+                ShellJobModel shellJobModel = (ShellJobModel) jobModel;
+                FileResource fileResource = shellJobModel.toFileResource();
+                fileResource.setNamespace(scheduler.getNamespace());
+                count += taskStore.addFileResource(fileResource);
+                ShellJob shellJob = shellJobModel.toJobEntity();
+                shellJob.setNamespace(scheduler.getNamespace());
+                shellJob.setJobId(job.getId());
+                shellJob.setFileResourceId(fileResource.getId());
+                count += taskStore.addShellJob(shellJob);
+            } else {
+                throw new IllegalArgumentException("不支持的任务类型:" + jobModel.getClass().getName());
+            }
+            return count;
+        });
+    }
+
+    /**
+     * 批量增加定时任务
+     */
+    public void addJobs(Map<AbstractJob, AbstractTrigger> jobs) {
+        Assert.notEmpty(jobs, "参数jobs不能为空");
+        Assert.noNullElements(jobs.keySet(), "参数jobs含有空job");
+        Assert.noNullElements(jobs.values(), "参数jobs含有空trigger");
+        taskStore.beginTX(status -> {
+            jobs.forEach(this::addJob);
+            return null;
+        });
+    }
+
+    /**
+     * 禁用定时任务
+     */
+    public void disableJob(Long jobId) {
+    }
+
+    /**
+     * 批量禁用定时任务
+     */
+    public void disableJobs(Collection<Long> jobIds) {
+        Assert.notEmpty(jobIds, "参数jobIds不能为空");
+        Assert.noNullElements(jobIds, "参数jobIds含有空jobId");
+        taskStore.beginTX(status -> {
+            jobIds.forEach(this::disableJob);
+            return null;
+        });
+    }
+
+    /**
+     * 启用定时任务
+     */
+    public void enableJob(Long jobId) {
+    }
+
+    /**
+     * 批量启用定时任务
+     */
+    public void enableJobs(Collection<Long> jobIds) {
+        Assert.notEmpty(jobIds, "参数jobIds不能为空");
+        Assert.noNullElements(jobIds, "参数jobIds含有空jobId");
+        taskStore.beginTX(status -> {
+            jobIds.forEach(this::enableJob);
+            return null;
+        });
+    }
+
+    /**
+     * 删除定时任务
+     */
+    public void deleteJob(Long jobId) {
+    }
+
+    /**
+     * 批量删除定时任务
+     */
+    public void deleteJobs(Collection<Long> jobIds) {
+        Assert.notEmpty(jobIds, "参数jobIds不能为空");
+        Assert.noNullElements(jobIds, "参数jobIds含有空jobId");
+        taskStore.beginTX(status -> {
+            jobIds.forEach(this::deleteJob);
+            return null;
+        });
+    }
+
+    /**
+     * 立即执行定时任务
+     */
+    public void execJob(Long jobId) {
+    }
+
+    /**
+     * 批量立即执行定时任务
+     */
+    public void execJobs(Collection<Long> jobIds) {
+        Assert.notEmpty(jobIds, "参数jobIds不能为空");
+        Assert.noNullElements(jobIds, "参数jobIds含有空jobId");
+        taskStore.beginTX(status -> {
+            jobIds.forEach(this::execJob);
+            return null;
+        });
+    }
+
+    /**
+     * 中断定时任务
+     */
+    public void interruptJob(Long jobId) {
+    }
+
+    /**
+     * 批量中断定时任务
+     */
+    public void interruptJobs(Collection<Long> jobIds) {
+        Assert.notEmpty(jobIds, "参数jobIds不能为空");
+        Assert.noNullElements(jobIds, "参数jobIds含有空jobId");
+        taskStore.beginTX(status -> {
+            jobIds.forEach(this::interruptJob);
+            return null;
+        });
+    }
+
 //    /**
 //     *
 //     */
@@ -469,27 +581,45 @@ public class TaskInstance {
 //    /**
 //     *
 //     */
-//    public void updateJobs() {
-//    }
-//
-//    /**
-//     *
-//     */
-//    public void interruptJob() {
-//    }
-//
-//    /**
-//     *
-//     */
-//    public void interruptJobs() {
-//    }
-//
-//    /**
-//     *
-//     */
 //    public void queryJobs() {
 //    }
 //
+
+    /**
+     * 禁用触发器
+     */
+    public void disableTrigger(Long triggerId) {
+    }
+
+    /**
+     * 批量禁用触发器
+     */
+    public void disableTriggers(Collection<Long> triggerIds) {
+        Assert.notEmpty(triggerIds, "参数triggerIds不能为空");
+        Assert.noNullElements(triggerIds, "参数triggerIds含有空triggerId");
+        taskStore.beginTX(status -> {
+            triggerIds.forEach(this::disableTrigger);
+            return null;
+        });
+    }
+
+    /**
+     * 启用触发器
+     */
+    public void enableTrigger(Long triggerId) {
+    }
+
+    /**
+     * 批量启用触发器
+     */
+    public void enableTriggers(Collection<Long> triggerIds) {
+        Assert.notEmpty(triggerIds, "参数jobIds不能为空");
+        Assert.noNullElements(triggerIds, "参数triggerIds含有空triggerId");
+        taskStore.beginTX(status -> {
+            triggerIds.forEach(this::enableTrigger);
+            return null;
+        });
+    }
 
     /**
      * 获取所有调度器
