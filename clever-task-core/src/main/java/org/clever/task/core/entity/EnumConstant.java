@@ -133,6 +133,15 @@ public interface EnumConstant {
     int JOB_TYPE_4 = 4;
 
     /**
+     * 是否更新任务数据，0：不更新，1：更新
+     */
+    int JOB_IS_UPDATE_DATA_0 = 0;
+    /**
+     * 是否更新任务数据，0：不更新，1：更新
+     */
+    int JOB_IS_UPDATE_DATA_1 = 1;
+
+    /**
      * 任务执行结果，0：成功，1：失败，2：取消
      */
     int JOB_LOG_STATUS_0 = 0;
@@ -144,4 +153,13 @@ public interface EnumConstant {
      * 任务执行结果，0：成功，1：失败，2：取消
      */
     int JOB_LOG_STATUS_2 = 2;
+
+    /**
+     * 是否是静态方法(函数)，0：非静态，1：静态
+     */
+    int JAVA_JOB_IS_STATIC_0 = 0;
+    /**
+     * 是否是静态方法(函数)，0：非静态，1：静态
+     */
+    int JAVA_JOB_IS_STATIC_1 = 1;
 }

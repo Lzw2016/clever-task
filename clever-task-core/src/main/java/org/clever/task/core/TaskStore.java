@@ -257,6 +257,22 @@ public class TaskStore {
     }
 
     /**
+     * 获取JavaJob
+     */
+    public JavaJob getJavaJob(String namespace, Long jobId) {
+        List<JavaJob> jobList = jdbcTemplate.query(
+                SqlConstant.JAVA_JOB_BY_JOB_ID,
+                DataClassRowMapper.newInstance(JavaJob.class),
+                namespace,
+                jobId
+        );
+        if (jobList.isEmpty()) {
+            return null;
+        }
+        return jobList.get(0);
+    }
+
+    /**
      * 更新无效的触发器配置 -> type=2|3 更新 next_fire_time=null
      */
     public int updateInvalidTrigger(String namespace) {

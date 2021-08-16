@@ -54,6 +54,7 @@
 
     <modules>
         <module>clever-task-core</module>
+        <module>clever-task-ext</module>
     </modules>
 
     <properties>
@@ -74,6 +75,11 @@
             <dependency>
                 <groupId>org.clever</groupId>
                 <artifactId>clever-task-core</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.clever</groupId>
+                <artifactId>clever-task-ext</artifactId>
                 <version>${revision}</version>
             </dependency>
         </dependencies>
