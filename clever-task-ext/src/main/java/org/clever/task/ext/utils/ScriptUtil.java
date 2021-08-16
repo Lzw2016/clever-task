@@ -79,6 +79,7 @@ public class ScriptUtil {
             DefaultExecutor exec = new DefaultExecutor();
             exec.setWatchdog(watchdog);
             exec.setExitValues(null);
+            // exec.setWorkingDirectory();
             exec.setStreamHandler(streamHandler);
             exitValue = exec.execute(commandline);
             if (watchdog.killedProcess()) {
@@ -106,5 +107,4 @@ public class ScriptUtil {
         }
         return exitValue;
     }
-
 }
