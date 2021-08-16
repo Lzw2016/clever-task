@@ -273,6 +273,38 @@ public class TaskStore {
     }
 
     /**
+     * 获取JsJob
+     */
+    public JsJob getJsJob(String namespace, Long jobId) {
+        List<JsJob> jobList = jdbcTemplate.query(
+                SqlConstant.JS_JOB_BY_JOB_ID,
+                DataClassRowMapper.newInstance(JsJob.class),
+                namespace,
+                jobId
+        );
+        if (jobList.isEmpty()) {
+            return null;
+        }
+        return jobList.get(0);
+    }
+
+    /**
+     * 获取ShellJob
+     */
+    public ShellJob getShellJob(String namespace, Long jobId) {
+        List<ShellJob> jobList = jdbcTemplate.query(
+                SqlConstant.SHELL_JOB_BY_JOB_ID,
+                DataClassRowMapper.newInstance(ShellJob.class),
+                namespace,
+                jobId
+        );
+        if (jobList.isEmpty()) {
+            return null;
+        }
+        return jobList.get(0);
+    }
+
+    /**
      * 更新无效的触发器配置 -> type=2|3 更新 next_fire_time=null
      */
     public int updateInvalidTrigger(String namespace) {

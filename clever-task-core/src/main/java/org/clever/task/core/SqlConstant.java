@@ -150,7 +150,11 @@ public interface SqlConstant {
 
     String HTTP_JOB_BY_JOB_ID = "select * from http_job where namespace=? and job_id=?";
 
-    String JAVA_JOB_BY_JOB_ID = "select * from JavaJob where namespace=? and job_id=?";
+    String JAVA_JOB_BY_JOB_ID = "select * from java_job where namespace=? and job_id=?";
+
+    String JS_JOB_BY_JOB_ID = "select * from js_job where namespace=? and job_id=?";
+
+    String SHELL_JOB_BY_JOB_ID = "select * from shell_job where namespace=? and job_id=?";
 
     // ---------------------------------------------------------------------------------------------------------------------------------------- xxx_log
 

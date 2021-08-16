@@ -40,7 +40,7 @@ public class JavaJobExecutor implements JobExecutor {
 
     @Override
     public void exec(Date dbNow, Job job, Scheduler scheduler, TaskStore taskStore) throws Exception {
-        JavaJob javaJob = taskStore.beginReadOnlyTX(status -> taskStore.getJavaJob(scheduler.getNamespace(), job.getId()));
+        final JavaJob javaJob = taskStore.beginReadOnlyTX(status -> taskStore.getJavaJob(scheduler.getNamespace(), job.getId()));
         if (javaJob == null) {
             throw new JobExecutorException(String.format("JavaJob数据不存在，JobId=%s", job.getId()));
         }
@@ -48,10 +48,14 @@ public class JavaJobExecutor implements JobExecutor {
                 null : JacksonMapper.getInstance().fromJson(job.getJobData(), LinkedHashMap.class);
         final Object[] args = jobData == null ? null : new Object[]{jobData};
         final Class<?> clazz = Class.forName(javaJob.getClassName());
-        Method method = getAccessibleMethodByName(clazz, javaJob.getClassMethod(), true);
-        if (method == null) {
-            method = getAccessibleMethodByName(clazz, javaJob.getClassMethod(), false);
-        }
+        final String cacheKey = String.format("%s#%s", javaJob.getClassName(), javaJob.getClassMethod());
+        Method method = METHOD_CACHE.computeIfAbsent(cacheKey, key -> {
+            Method tmp = getAccessibleMethodByName(clazz, javaJob.getClassMethod(), true);
+            if (tmp == null) {
+                tmp = getAccessibleMethodByName(clazz, javaJob.getClassMethod(), false);
+            }
+            return tmp;
+        });
         if (method == null) {
             throw new JobExecutorException(String.format(
                     "JavaJob执行失败，method不存在，JobId=%s | class=%s | method=%s",
@@ -63,14 +67,14 @@ public class JavaJobExecutor implements JobExecutor {
         if (Objects.equals(javaJob.getIsStatic(), EnumConstant.JAVA_JOB_IS_STATIC_0)) {
             obj = clazz.getDeclaredConstructor().newInstance();
         }
-        Object res = null;
+        Object res;
         if (hasParameter) {
             res = method.invoke(obj, args);
         } else {
             res = method.invoke(obj);
         }
         log.debug("JavaJob执行完成，class={} | method={} | res={}", javaJob.getClassName(), javaJob.getClassMethod(), res);
-        if (Objects.equals(job.getIsUpdateData(), EnumConstant.JOB_IS_UPDATE_DATA_1)) {
+        if (hasParameter && Objects.equals(job.getIsUpdateData(), EnumConstant.JOB_IS_UPDATE_DATA_1)) {
             job.setJobData(JacksonMapper.getInstance().toJson(jobData));
         }
     }
