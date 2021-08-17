@@ -40,7 +40,9 @@ public class ShellJobModel extends AbstractJob {
         this.name = name;
         this.setShellType(shellType);
         this.filePath = StringUtils.isNotBlank(filePath) ? filePath : "/";
-        this.fileName = StringUtils.isNotBlank(fileName) ? filePath : String.format("%s_%s.sh", name, UUID.randomUUID());
+        this.fileName = StringUtils.isNotBlank(fileName)
+                ? filePath
+                : String.format("%s_%s%s", name, UUID.randomUUID(), EnumConstant.SHELL_TYPE_FILE_SUFFIX_MAPPING.getOrDefault(shellType, ".txt"));
         this.fileContent = fileContent;
     }
 

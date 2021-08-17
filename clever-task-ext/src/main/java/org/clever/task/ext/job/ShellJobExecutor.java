@@ -83,7 +83,7 @@ public class ShellJobExecutor implements JobExecutor {
                 DateTimeUtils.formatToString(dbNow)
         );
         final String command = FilenameUtils.concat(dir, EnumConstant.SHELL_TYPE_COMMAND_MAPPING.getOrDefault(shellJob.getShellType(), "sh"));
-        final String scriptFile = FilenameUtils.concat(dir, "shell" + EnumConstant.SHELL_TYPE_FILE_SUFFIX_MAPPING.getOrDefault(shellJob.getShellType(), ".txt"));
+        final String scriptFile = fileResource.getName();
         final String outLogFile = FilenameUtils.concat(dir, "out.log");
         final String errLogFile = FilenameUtils.concat(dir, "err.log");
         // 生成脚本文件
