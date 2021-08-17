@@ -1,5 +1,9 @@
 package org.clever.task.core.entity;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * 作者：lizw <br/>
  * 创建时间：2021/08/01 20:36 <br/>
@@ -162,4 +166,75 @@ public interface EnumConstant {
      * 是否是静态方法(函数)，0：非静态，1：静态
      */
     int JAVA_JOB_IS_STATIC_1 = 1;
+
+    /**
+     * shell脚本类型：bash|sh|ash|powershell|cmd|python|node|deno|php
+     */
+    String SHELL_JOB_SHELL_TYPE_BASH = "bash";
+    /**
+     * shell脚本类型：bash|sh|ash|powershell|cmd|python|node|deno|php
+     */
+    String SHELL_JOB_SHELL_TYPE_SH = "sh";
+    /**
+     * shell脚本类型：bash|sh|ash|powershell|cmd|python|node|deno|php
+     */
+    String SHELL_JOB_SHELL_TYPE_ASH = "ash";
+    /**
+     * shell脚本类型：bash|sh|ash|powershell|cmd|python|node|deno|php
+     */
+    String SHELL_JOB_SHELL_TYPE_POWERSHELL = "powershell";
+    /**
+     * shell脚本类型：bash|sh|ash|powershell|cmd|python|node|deno|php
+     */
+    String SHELL_JOB_SHELL_TYPE_CMD = "cmd";
+    /**
+     * shell脚本类型：bash|sh|ash|powershell|cmd|python|node|deno|php
+     */
+    String SHELL_JOB_SHELL_TYPE_PYTHON = "python";
+    /**
+     * shell脚本类型：bash|sh|ash|powershell|cmd|python|node|deno|php
+     */
+    String SHELL_JOB_SHELL_TYPE_NODE = "node";
+    /**
+     * shell脚本类型：bash|sh|ash|powershell|cmd|python|node|deno|php
+     */
+    String SHELL_JOB_SHELL_TYPE_DENO = "deno";
+    /**
+     * shell脚本类型：bash|sh|ash|powershell|cmd|python|node|deno|php
+     */
+    String SHELL_JOB_SHELL_TYPE_PHP = "php";
+
+    /**
+     * shell脚本类型对应的文件后缀
+     */
+    Map<String, String> SHELL_TYPE_FILE_SUFFIX_MAPPING = Collections.unmodifiableMap(
+            new HashMap<String, String>() {{
+                put(SHELL_JOB_SHELL_TYPE_BASH, ".sh");
+                put(SHELL_JOB_SHELL_TYPE_SH, ".sh");
+                put(SHELL_JOB_SHELL_TYPE_ASH, ".sh");
+                put(SHELL_JOB_SHELL_TYPE_POWERSHELL, ".ps1");
+                put(SHELL_JOB_SHELL_TYPE_CMD, ".bat");
+                put(SHELL_JOB_SHELL_TYPE_PYTHON, ".py");
+                put(SHELL_JOB_SHELL_TYPE_NODE, ".js");
+                put(SHELL_JOB_SHELL_TYPE_DENO, ".ts");
+                put(SHELL_JOB_SHELL_TYPE_PHP, ".php");
+            }}
+    );
+
+    /**
+     * shell脚本类型对应的command命令
+     */
+    Map<String, String> SHELL_TYPE_COMMAND_MAPPING = Collections.unmodifiableMap(
+            new HashMap<String, String>() {{
+                put(SHELL_JOB_SHELL_TYPE_BASH, "sh");
+                put(SHELL_JOB_SHELL_TYPE_SH, "sh");
+                put(SHELL_JOB_SHELL_TYPE_ASH, "sh");
+                put(SHELL_JOB_SHELL_TYPE_POWERSHELL, "powershell");
+                put(SHELL_JOB_SHELL_TYPE_CMD, "cmd");
+                put(SHELL_JOB_SHELL_TYPE_PYTHON, "python");
+                put(SHELL_JOB_SHELL_TYPE_NODE, "node");
+                put(SHELL_JOB_SHELL_TYPE_DENO, "deno run");
+                put(SHELL_JOB_SHELL_TYPE_PHP, "php");
+            }}
+    );
 }

@@ -190,13 +190,5 @@ public interface SqlConstant {
 
     String FILE_RESOURCE_TABLE_NAME = "file_resource";
 
-    String GET_FILE_RESOURCE_BY_JOB_ID = "" +
-            "select " +
-            "  b.* " +
-            "from js_job a left join file_resource b on (a.file_resource_id=b.id and a.namespace=b.namespace) " +
-            "where a.job_id=? " +
-            "  and a.namespace=? " +
-            "limit 1";
-
-
+    String GET_FILE_RESOURCE_BY_ID = "select * from file_resource where id=? and namespace=?";
 }

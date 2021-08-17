@@ -30,6 +30,11 @@ public class ShellJob implements Serializable {
     private Long jobId;
 
     /**
+     * shell脚本类型：bash|sh|ash|powershell|cmd|python|node|deno|php
+     */
+    private String shellType;
+
+    /**
      * shell文件id
      */
     private Long fileResourceId;

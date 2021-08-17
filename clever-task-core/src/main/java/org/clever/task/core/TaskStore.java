@@ -437,11 +437,11 @@ public class TaskStore {
     /**
      * 根据JobId查询脚本文件
      */
-    private FileResource getFileResourceByJobId(String namespace, Long jobId) {
+    public FileResource getFileResourceById(String namespace, Long fileResourceId) {
         List<FileResource> jobTriggerList = jdbcTemplate.query(
-                SqlConstant.GET_FILE_RESOURCE_BY_JOB_ID,
+                SqlConstant.GET_FILE_RESOURCE_BY_ID,
                 DataClassRowMapper.newInstance(FileResource.class),
-                jobId,
+                fileResourceId,
                 namespace
         );
         if (jobTriggerList.isEmpty()) {

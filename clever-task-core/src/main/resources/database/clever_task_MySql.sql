@@ -184,6 +184,7 @@ create table shell_job
     id                  bigint          not null        auto_increment                          comment '主键id',
     namespace           varchar(63)     not null                                                comment '命名空间',
     job_id              bigint          not null                                                comment '任务ID',
+    shell_type          varchar(15)     not null                                                comment 'shell脚本类型：bash|sh|ash|powershell|cmd|python|node|deno|php',
     file_resource_id    bigint          not null                                                comment 'shell文件id',
     create_at           datetime(3)     not null        default current_timestamp(3)            comment '创建时间',
     update_at           datetime(3)                     on update current_timestamp(3)          comment '更新时间',

@@ -18,6 +18,10 @@ import java.util.UUID;
 @Data
 public class ShellJobModel extends AbstractJob {
     /**
+     * shell脚本类型：bash|sh|ash|powershell|cmd|python|node|deno|php
+     */
+    private String shellType;
+    /**
      * shell文件内容
      */
     private String fileContent;
@@ -30,17 +34,24 @@ public class ShellJobModel extends AbstractJob {
      */
     private String fileName;
 
-    public ShellJobModel(String name, String filePath, String fileName, String fileContent) {
+    public ShellJobModel(String name, String shellType, String filePath, String fileName, String fileContent) {
         Assert.hasText(name, "参数name不能为空");
         Assert.hasText(fileContent, "参数fileContent不能为空");
         this.name = name;
+        this.setShellType(shellType);
         this.filePath = StringUtils.isNotBlank(filePath) ? filePath : "/";
         this.fileName = StringUtils.isNotBlank(fileName) ? filePath : String.format("%s_%s.sh", name, UUID.randomUUID());
         this.fileContent = fileContent;
     }
 
-    public ShellJobModel(String name, String fileContent) {
-        this(name, null, null, fileContent);
+    public ShellJobModel(String name, String shellType, String fileContent) {
+        this(name, shellType, null, null, fileContent);
+    }
+
+    public void setShellType(String shellType) {
+        Assert.hasText(shellType, "参数shellType不能为空");
+        Assert.isTrue(EnumConstant.SHELL_TYPE_FILE_SUFFIX_MAPPING.containsKey(shellType), "参数shellType值非法，不支持的shellType：" + shellType);
+        this.shellType = shellType;
     }
 
     @Override
@@ -62,6 +73,8 @@ public class ShellJobModel extends AbstractJob {
     }
 
     public ShellJob toJobEntity() {
-        return new ShellJob();
+        ShellJob shellJob = new ShellJob();
+        shellJob.setShellType(getShellType());
+        return shellJob;
     }
 }
