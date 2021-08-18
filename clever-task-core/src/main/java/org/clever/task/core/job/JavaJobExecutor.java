@@ -16,6 +16,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -44,9 +45,10 @@ public class JavaJobExecutor implements JobExecutor {
         if (javaJob == null) {
             throw new JobExecutorException(String.format("JavaJob数据不存在，JobId=%s", job.getId()));
         }
-        final LinkedHashMap<?, ?> jobData = StringUtils.isBlank(job.getJobData()) ?
-                null : JacksonMapper.getInstance().fromJson(job.getJobData(), LinkedHashMap.class);
-        final Object[] args = jobData == null ? null : new Object[]{jobData};
+        final LinkedHashMap<?, ?> jobData = StringUtils.isBlank(job.getJobData())
+                ? new LinkedHashMap<>()
+                : JacksonMapper.getInstance().fromJson(job.getJobData(), LinkedHashMap.class);
+        final Object[] args = new Object[]{jobData};
         final Class<?> clazz = Class.forName(javaJob.getClassName());
         final String cacheKey = String.format("%s#%s", javaJob.getClassName(), javaJob.getClassMethod());
         Method method = METHOD_CACHE.computeIfAbsent(cacheKey, key -> {
@@ -86,7 +88,7 @@ public class JavaJobExecutor implements JobExecutor {
                 Class<?>[] parameterTypes = method.getParameterTypes();
                 if (hasParameter) {
                     // 有参数，参数必须是 LinkedHashMap
-                    if (parameterTypes.length != 1 || !LinkedHashMap.class.isAssignableFrom(parameterTypes[0])) {
+                    if (parameterTypes.length != 1 || !Map.class.isAssignableFrom(parameterTypes[0])) {
                         continue;
                     }
                 } else {

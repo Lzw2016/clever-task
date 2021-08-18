@@ -82,6 +82,12 @@
                 <artifactId>clever-task-ext</artifactId>
                 <version>${revision}</version>
             </dependency>
+            <!--clever-graaljs-->
+            <dependency>
+                <groupId>org.clever</groupId>
+                <artifactId>clever-graaljs-core</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
+            </dependency>
             <!--commons-exec-->
             <dependency>
                 <groupId>org.apache.commons</groupId>

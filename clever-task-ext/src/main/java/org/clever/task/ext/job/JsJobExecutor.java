@@ -1,15 +1,16 @@
 package org.clever.task.ext.job;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.clever.graaljs.core.ScriptEngineInstance;
+import org.clever.graaljs.core.internal.jackson.JacksonMapperSupport;
 import org.clever.task.core.JobExecutor;
 import org.clever.task.core.TaskStore;
-import org.clever.task.core.entity.EnumConstant;
-import org.clever.task.core.entity.Job;
-import org.clever.task.core.entity.JsJob;
-import org.clever.task.core.entity.Scheduler;
+import org.clever.task.core.entity.*;
 import org.clever.task.core.exception.JobExecutorException;
 
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.Objects;
 
 /**
@@ -18,6 +19,12 @@ import java.util.Objects;
  */
 @Slf4j
 public class JsJobExecutor implements JobExecutor {
+    private final ScriptEngineInstance scriptEngineInstance;
+
+    public JsJobExecutor(ScriptEngineInstance scriptEngineInstance) {
+        this.scriptEngineInstance = scriptEngineInstance;
+    }
+
     @Override
     public boolean support(int jobType) {
         return Objects.equals(jobType, EnumConstant.JOB_TYPE_3);
@@ -34,6 +41,19 @@ public class JsJobExecutor implements JobExecutor {
         if (jsJob == null) {
             throw new JobExecutorException(String.format("JsJob数据不存在，JobId=%s", job.getId()));
         }
-        // TODO 执行JsJob
+        final FileResource fileResource = taskStore.beginReadOnlyTX(status -> taskStore.getFileResourceById(scheduler.getNamespace(), jsJob.getFileResourceId()));
+        if (fileResource == null) {
+            throw new JobExecutorException(String.format("FileResource数据不存在，JobId=%s | FileResourceId=%s", job.getId(), jsJob.getFileResourceId()));
+        }
+        final LinkedHashMap<?, ?> jobData = StringUtils.isBlank(job.getJobData())
+                ? new LinkedHashMap<>()
+                : JacksonMapperSupport.getHttpApiJacksonMapper().fromJson(job.getJobData(), LinkedHashMap.class);
+        scriptEngineInstance.wrapFunctionAndEval(fileResource.getContent(), scriptObject -> {
+            scriptObject.executeVoid(jobData);
+        });
+        log.debug("JsJob执行完成，JobId=={} | FileResourceId=={}", job.getId(), jsJob.getFileResourceId());
+        if (Objects.equals(job.getIsUpdateData(), EnumConstant.JOB_IS_UPDATE_DATA_1)) {
+            job.setJobData(JacksonMapperSupport.getHttpApiJacksonMapper().toJson(jobData));
+        }
     }
 }

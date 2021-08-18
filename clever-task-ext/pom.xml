@@ -25,7 +25,10 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-exec</artifactId>
-            <version>1.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.clever</groupId>
+            <artifactId>clever-graaljs-core</artifactId>
         </dependency>
     </dependencies>
 </project>
