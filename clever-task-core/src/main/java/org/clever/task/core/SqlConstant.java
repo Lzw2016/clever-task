@@ -126,6 +126,8 @@ public interface SqlConstant {
 
     String GET_LOCK_JOB = "update job set lock_version=lock_version+1 where id=? and namespace=? and lock_version=?";
 
+    String UPDATE_JOB_DATA = "update job set job_data=? where namespace=? and id=?";
+
     String GET_JOB_BY_ID = "select * from job where namespace=? and id=?";
 
     String QUERY_ALL_JOB = "select * from job where namespace=?";

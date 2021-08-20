@@ -214,6 +214,13 @@ public class TaskStore {
     }
 
     /**
+     * 更新job Data
+     */
+    public int updateJodData(String namespace, Long jobId, String jobData) {
+        return jdbcTemplate.update(SqlConstant.UPDATE_JOB_DATA, jobData, namespace, jobId);
+    }
+
+    /**
      * 根据 namespace jobId 查询
      */
     public Job getJob(String namespace, Long jobId) {

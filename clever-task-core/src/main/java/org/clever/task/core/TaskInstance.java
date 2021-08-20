@@ -170,7 +170,7 @@ public class TaskInstance {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             SchedulerLog schedulerLog = newSchedulerLog();
             schedulerLog.setEventName(SchedulerLog.EVENT_SHUTDOWN);
-            this.schedulerErrorListener(schedulerLog);
+            this.schedulerPausedListener(schedulerLog);
         }));
     }
 
@@ -227,7 +227,7 @@ public class TaskInstance {
                                 // 记录调度器日志(异步)
                                 SchedulerLog schedulerLog = newSchedulerLog();
                                 schedulerLog.setEventInfo(SchedulerLog.EVENT_DATA_CHECK_ERROR, ExceptionUtils.getStackTraceAsString(e));
-                                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
+                                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog, e));
                             }
                         },
                         GlobalConstant.DATA_CHECK_INTERVAL
@@ -241,7 +241,7 @@ public class TaskInstance {
                                 log.error("[TaskInstance] 调度器节点注册失败 | instanceName={}", this.getInstanceName(), e);
                                 SchedulerLog schedulerLog = newSchedulerLog();
                                 schedulerLog.setEventInfo(SchedulerLog.EVENT_REGISTER_SCHEDULER_ERROR, ExceptionUtils.getStackTraceAsString(e));
-                                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
+                                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog, e));
                             }
                         },
                         GlobalConstant.REGISTER_SCHEDULER_INTERVAL
@@ -256,7 +256,7 @@ public class TaskInstance {
                                 // 记录调度器日志(异步)
                                 SchedulerLog schedulerLog = newSchedulerLog();
                                 schedulerLog.setEventInfo(SchedulerLog.EVENT_CALC_NEXT_FIRE_TIME_ERROR, ExceptionUtils.getStackTraceAsString(e));
-                                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
+                                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog, e));
                             }
                         },
                         GlobalConstant.CALC_NEXT_FIRE_TIME_INTERVAL
@@ -271,7 +271,7 @@ public class TaskInstance {
                                 // 记录调度器日志(异步)
                                 SchedulerLog schedulerLog = newSchedulerLog();
                                 schedulerLog.setEventInfo(SchedulerLog.EVENT_HEART_BEAT_ERROR, ExceptionUtils.getStackTraceAsString(e));
-                                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
+                                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog, e));
                             }
                         },
                         scheduler.getHeartbeatInterval()
@@ -286,7 +286,7 @@ public class TaskInstance {
                                 // 记录调度器日志(异步)
                                 SchedulerLog schedulerLog = newSchedulerLog();
                                 schedulerLog.setEventInfo(SchedulerLog.EVENT_RELOAD_SCHEDULER_ERROR, ExceptionUtils.getStackTraceAsString(e));
-                                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
+                                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog, e));
                             }
                         },
                         GlobalConstant.RELOAD_SCHEDULER_INTERVAL
@@ -305,7 +305,7 @@ public class TaskInstance {
                                 // 记录调度器日志(异步)
                                 SchedulerLog schedulerLog = newSchedulerLog();
                                 schedulerLog.setEventInfo(SchedulerLog.EVENT_RELOAD_NEXT_TRIGGER_ERROR, ExceptionUtils.getStackTraceAsString(e));
-                                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
+                                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog, e));
                             } finally {
                                 if (hasPermit) {
                                     schedulerCoordinator.release();
@@ -328,7 +328,7 @@ public class TaskInstance {
                                 // 记录调度器日志(异步)
                                 SchedulerLog schedulerLog = newSchedulerLog();
                                 schedulerLog.setEventInfo(SchedulerLog.EVENT_TRIGGER_JOB_EXEC_ERROR, ExceptionUtils.getStackTraceAsString(e));
-                                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
+                                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog, e));
                             } finally {
                                 if (hasPermit) {
                                     schedulerCoordinator.release();
@@ -350,7 +350,7 @@ public class TaskInstance {
                 // 记录调度器日志(异步)
                 SchedulerLog schedulerLog = newSchedulerLog();
                 schedulerLog.setEventInfo(SchedulerLog.EVENT_STARTED_ERROR, ExceptionUtils.getStackTraceAsString(e));
-                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
+                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog, e));
             }
         }
     }
@@ -398,7 +398,7 @@ public class TaskInstance {
             // 记录调度器日志(异步)
             SchedulerLog schedulerLog = newSchedulerLog();
             schedulerLog.setEventInfo(SchedulerLog.EVENT_PAUSED_ERROR, ExceptionUtils.getStackTraceAsString(e));
-            schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
+            schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog, e));
         } finally {
             taskState = TaskState.Pause;
         }
@@ -702,7 +702,7 @@ public class TaskInstance {
                 // 记录调度器日志(异步)
                 SchedulerLog schedulerLog = newSchedulerLog();
                 schedulerLog.setEventInfo(SchedulerLog.EVENT_CALC_CRON_NEXT_FIRE_TIME_ERROR, ExceptionUtils.getStackTraceAsString(e));
-                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
+                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog, e));
             }
         }
         log.info("[TaskInstance] 更新触发器下一次触发时间nextFireTime字段 | 更新数量：{} | instanceName={}", updateCount, this.getInstanceName());
@@ -804,7 +804,7 @@ public class TaskInstance {
                         // 记录调度器日志(异步)
                         SchedulerLog schedulerLog = newSchedulerLog();
                         schedulerLog.setEventInfo(SchedulerLog.EVENT_JOB_TRIGGER_FIRE_ERROR, ExceptionUtils.getStackTraceAsString(e));
-                        schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
+                        schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog, e));
                     } finally {
                         taskContext.removeTriggering(jobTrigger);
                     }
@@ -816,7 +816,7 @@ public class TaskInstance {
                 // 记录调度器日志(异步)
                 SchedulerLog schedulerLog = newSchedulerLog();
                 schedulerLog.setEventInfo(SchedulerLog.EVENT_TRIGGER_JOB_EXEC_ITEM_ERROR, ExceptionUtils.getStackTraceAsString(e));
-                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog));
+                schedulerWorker.execute(() -> this.schedulerErrorListener(schedulerLog, e));
             }
         }
         // 等待触发任务结束(最多等TRIGGER_JOB_EXEC_MAX_INTERVAL毫秒)
@@ -920,6 +920,7 @@ public class TaskInstance {
             jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_0);
             jobWorker.execute(() -> {
                 final JobLog jobLog = newJobLog(dbNow, job, jobTrigger, jobTriggerLog.getId());
+                final String oldJobData = job.getJobData();
                 // 控制并发执行 - 是否允许多节点并发执行
                 final boolean allowConcurrent = Objects.equals(EnumConstant.JOB_ALLOW_CONCURRENT_1, job.getAllowConcurrent());
                 if (allowConcurrent) {
@@ -940,6 +941,11 @@ public class TaskInstance {
                         jobLog.setExceptionInfo(ExceptionUtils.getStackTraceAsString(e));
                         jobEndRunListener(jobLog);
                     }
+                }
+                // 更新任务数据
+                final String newJobData = job.getJobData();
+                if (!Objects.equals(oldJobData, newJobData) && Objects.equals(job.getIsUpdateData(), EnumConstant.JOB_IS_UPDATE_DATA_1)) {
+                    taskStore.beginTX(status -> taskStore.updateJodData(job.getNamespace(), job.getId(), newJobData));
                 }
             });
         }
@@ -1006,7 +1012,7 @@ public class TaskInstance {
                     jobLog.setStatus(EnumConstant.JOB_LOG_STATUS_1);
                     jobLog.setRetryCount(retryCount);
                     jobLog.setExceptionInfo(ExceptionUtils.getStackTraceAsString(e));
-                    jobRetryRunListener(jobLog);
+                    jobRetryRunListener(jobLog, e);
                 }
             }
             final long endTime = System.currentTimeMillis();
@@ -1068,7 +1074,7 @@ public class TaskInstance {
     /**
      * 调度器出现错误
      */
-    public void schedulerErrorListener(SchedulerLog schedulerLog) {
+    public void schedulerErrorListener(SchedulerLog schedulerLog, Exception error) {
         if (schedulerListeners == null || schedulerListeners.isEmpty()) {
             return;
         }
@@ -1078,7 +1084,7 @@ public class TaskInstance {
                 continue;
             }
             try {
-                schedulerListener.onErrorEvent(scheduler, taskStore, schedulerLog);
+                schedulerListener.onErrorEvent(scheduler, taskStore, schedulerLog, error);
             } catch (Exception e) {
                 log.error("[TaskInstance] 调度器出现错误事件处理失败 | schedulerListener={} | instanceName={}", schedulerListener.getClass().getName(), this.getInstanceName(), e);
             }
@@ -1148,7 +1154,7 @@ public class TaskInstance {
     /**
      * 重试执行
      */
-    public void jobRetryRunListener(JobLog jobLog) {
+    public void jobRetryRunListener(JobLog jobLog, Exception error) {
         if (jobListeners == null || jobListeners.isEmpty()) {
             return;
         }
@@ -1158,7 +1164,7 @@ public class TaskInstance {
                 continue;
             }
             try {
-                jobListener.onRetryRun(scheduler, taskStore, jobLog);
+                jobListener.onRetryRun(scheduler, taskStore, jobLog, error);
             } catch (Exception e) {
                 log.error("[TaskInstance] 任务重试执行事件处理失败 | schedulerListener={} | instanceName={}", jobListener.getClass().getName(), this.getInstanceName(), e);
             }

@@ -24,5 +24,5 @@ public interface SchedulerListener {
     /**
      * 调度器出现错误
      */
-    void onErrorEvent(Scheduler scheduler, TaskStore taskStore, SchedulerLog schedulerLog);
+    void onErrorEvent(Scheduler scheduler, TaskStore taskStore, SchedulerLog schedulerLog, Exception error);
 }

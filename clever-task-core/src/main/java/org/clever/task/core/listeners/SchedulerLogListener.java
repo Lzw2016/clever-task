@@ -24,7 +24,7 @@ public class SchedulerLogListener implements SchedulerListener {
     }
 
     @Override
-    public void onErrorEvent(Scheduler scheduler, TaskStore taskStore, SchedulerLog schedulerLog) {
+    public void onErrorEvent(Scheduler scheduler, TaskStore taskStore, SchedulerLog schedulerLog, Exception error) {
         saveSchedulerLog(taskStore, schedulerLog);
     }
 

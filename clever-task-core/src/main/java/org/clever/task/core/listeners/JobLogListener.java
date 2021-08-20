@@ -30,7 +30,7 @@ public class JobLogListener implements JobListener {
     }
 
     @Override
-    public void onRetryRun(Scheduler scheduler, TaskStore taskStore, JobLog jobLog) {
+    public void onRetryRun(Scheduler scheduler, TaskStore taskStore, JobLog jobLog, Exception error) {
         int count = taskStore.beginTX(status -> taskStore.updateJobLogByRetry(jobLog));
         if (count <= 0) {
             log.error("任务执行日志保存失败[onRetryRun]，jobLog={}", jobLog);

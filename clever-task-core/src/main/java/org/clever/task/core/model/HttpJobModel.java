@@ -61,14 +61,59 @@ public class HttpJobModel extends AbstractJob {
 
     @Data
     public static final class HttpRequestData implements Serializable {
-        private LinkedHashMap<String, String> params;
-        private LinkedHashMap<String, String> headers;
-        private LinkedHashMap<String, String> body;
+        private final LinkedHashMap<String, String> params = new LinkedHashMap<>();
+        private final LinkedHashMap<String, String> headers = new LinkedHashMap<>();
+        private final LinkedHashMap<String, Object> body = new LinkedHashMap<>();
         // private LinkedHashMap<String, HttpCookie> cookies;
 
         @Override
         public String toString() {
             return JacksonMapper.getInstance().toJson(this);
+        }
+
+        public HttpRequestData addParam(String name, String value) {
+            params.put(name, value);
+            return this;
+        }
+
+        public HttpRequestData removeParam(String name) {
+            params.remove(name);
+            return this;
+        }
+
+        public String getParam(String name) {
+            params.get(name);
+            return null;
+        }
+
+        public HttpRequestData addHeader(String name, String value) {
+            headers.put(name, value);
+            return this;
+        }
+
+        public HttpRequestData removeHeader(String name) {
+            headers.remove(name);
+            return this;
+        }
+
+        public String getHeader(String name) {
+            headers.get(name);
+            return null;
+        }
+
+        public HttpRequestData addBody(String name, Object value) {
+            body.put(name, value);
+            return this;
+        }
+
+        public HttpRequestData removeBody(String name) {
+            body.remove(name);
+            return this;
+        }
+
+        public Object getBody(String name) {
+            body.get(name);
+            return null;
         }
     }
 }

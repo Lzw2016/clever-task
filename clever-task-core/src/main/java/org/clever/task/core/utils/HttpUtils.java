@@ -150,12 +150,13 @@ public class HttpUtils {
     public static String executeReturnStr(OkHttpClient okHttpClient, Request request) {
         String body = null;
         Response response = execute(okHttpClient, request);
-        ResponseBody responseBody = response.body();
-        if (responseBody != null) {
-            try {
-                body = responseBody.string();
-            } catch (IOException e) {
-                throw ExceptionUtils.unchecked(e);
+        try (ResponseBody responseBody = response.body()) {
+            if (responseBody != null) {
+                try {
+                    body = responseBody.string();
+                } catch (IOException e) {
+                    throw ExceptionUtils.unchecked(e);
+                }
             }
         }
         return body;
@@ -167,12 +168,13 @@ public class HttpUtils {
     public static byte[] executeReturnByte(OkHttpClient okHttpClient, Request request) {
         byte[] body = null;
         Response response = execute(okHttpClient, request);
-        ResponseBody responseBody = response.body();
-        if (responseBody != null) {
-            try {
-                body = responseBody.bytes();
-            } catch (IOException e) {
-                throw ExceptionUtils.unchecked(e);
+        try (ResponseBody responseBody = response.body()) {
+            if (responseBody != null) {
+                try {
+                    body = responseBody.bytes();
+                } catch (IOException e) {
+                    throw ExceptionUtils.unchecked(e);
+                }
             }
         }
         return body;

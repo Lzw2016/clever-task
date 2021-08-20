@@ -31,3 +31,4 @@ pom.xml.versionsBackup
 httpCache
 logs
 clever-graaljs-types/node_modules
+clever-task-ext/shell_job

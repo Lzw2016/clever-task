@@ -27,13 +27,12 @@ public class JavaJobModel extends AbstractJob {
      */
     private String classMethod;
 
-    public JavaJobModel(String name, Integer isStatic, String className, String classMethod) {
+    public JavaJobModel(String name, boolean isStatic, String className, String classMethod) {
         Assert.hasText(name, "参数name不能为空");
-        Assert.notNull(isStatic, "参数isStatic不能为空");
         Assert.hasText(className, "参数className不能为空");
         Assert.hasText(classMethod, "参数classMethod不能为空");
         this.name = name;
-        this.isStatic = isStatic;
+        this.isStatic = isStatic ? EnumConstant.JAVA_JOB_IS_STATIC_1 : EnumConstant.JAVA_JOB_IS_STATIC_0;
         this.className = className;
         this.classMethod = classMethod;
     }

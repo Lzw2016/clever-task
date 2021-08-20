@@ -24,5 +24,5 @@ public interface JobListener {
     /**
      * 重试执行
      */
-    void onRetryRun(Scheduler scheduler, TaskStore taskStore, JobLog jobLog);
+    void onRetryRun(Scheduler scheduler, TaskStore taskStore, JobLog jobLog, Exception error);
 }
