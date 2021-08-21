@@ -3,6 +3,8 @@ package org.clever.task.ext.job;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
+import org.clever.graaljs.core.ScriptEngineConfig;
+import org.clever.graaljs.core.ScriptEngineInstance;
 import org.clever.task.core.TaskInstance;
 import org.clever.task.core.config.SchedulerConfig;
 import org.clever.task.core.entity.EnumConstant;
@@ -41,6 +43,15 @@ public class ExtTaskInstanceTest {
         return new HikariDataSource(newHikariConfig());
     }
 
+    public static ScriptEngineInstance scriptEngineInstance() {
+        final ScriptEngineConfig config = new ScriptEngineConfig();
+        config.setMaxIdle(8);
+        config.setMinIdle(0);
+        config.setMaxTotal(32);
+        config.setMaxWaitMillis(1000 * 8);
+        return new ScriptEngineInstance(config);
+    }
+
     public static SchedulerConfig newSchedulerConfig(String namespace) {
         SchedulerConfig config = new SchedulerConfig();
         config.setSchedulerExecutorPoolSize(4);
@@ -56,7 +67,7 @@ public class ExtTaskInstanceTest {
         TaskInstance taskInstance = new TaskInstance(
                 dataSource,
                 newSchedulerConfig(instanceName),
-                Arrays.asList(new MockJobExecutor(), new HttpJobExecutor(), new JavaJobExecutor(), new ShellJobExecutor()),
+                Arrays.asList(new MockJobExecutor(), new HttpJobExecutor(), new JavaJobExecutor(), new ShellJobExecutor(), new JsJobExecutor(scriptEngineInstance())),
                 Collections.singletonList(new SchedulerLogListener()),
                 Collections.singletonList(new JobTriggerLogListener()),
                 Collections.singletonList(new JobLogListener())
@@ -116,7 +127,7 @@ public class ExtTaskInstanceTest {
 
     @Test
     public void t21() throws InterruptedException {
-        // HTTP job
+        // Shell job
         startTaskInstance("shell_job_test", taskInstance -> {
             ShellJobModel jobModel = new ShellJobModel("ShellJobDemo", EnumConstant.SHELL_JOB_SHELL_TYPE_NODE, "console.log(\"###----------------------\", new Date());");
             AbstractTrigger trigger = new CronTrigger("ShellJobDemo_trigger", "0/5 * * * * ? *");
@@ -126,7 +137,29 @@ public class ExtTaskInstanceTest {
 
     @Test
     public void t22() throws InterruptedException {
-        // HTTP job
+        // Shell job
         startTaskInstance("shell_job_test", null);
+    }
+
+    @Test
+    public void t31() throws InterruptedException {
+        // js job
+        startTaskInstance("js_job_test", taskInstance -> {
+            JsJobModel jobModel = new JsJobModel(
+                    "JsJobDemo",
+                    "" +
+                            "if(!jobData.count) jobData.count = 0;\n" +
+                            "jobData.count++;\n" +
+                            "console.log('#JsJobDemo ----------------------', jobData.count , ' | ', CommonUtils.now());"
+            );
+            AbstractTrigger trigger = new CronTrigger("JsJobDemo_trigger", "0/5 * * * * ? *");
+            taskInstance.addJob(jobModel, trigger);
+        });
+    }
+
+    @Test
+    public void t32() throws InterruptedException {
+        // js job
+        startTaskInstance("js_job_test", null);
     }
 }

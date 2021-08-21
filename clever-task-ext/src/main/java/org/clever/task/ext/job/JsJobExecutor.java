@@ -2,12 +2,14 @@ package org.clever.task.ext.job;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.clever.graaljs.core.GraalConstant;
 import org.clever.graaljs.core.ScriptEngineInstance;
 import org.clever.graaljs.core.internal.jackson.JacksonMapperSupport;
 import org.clever.task.core.JobExecutor;
 import org.clever.task.core.TaskStore;
 import org.clever.task.core.entity.*;
 import org.clever.task.core.exception.JobExecutorException;
+import org.graalvm.polyglot.Value;
 
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -49,7 +51,14 @@ public class JsJobExecutor implements JobExecutor {
                 ? new LinkedHashMap<>()
                 : JacksonMapperSupport.getHttpApiJacksonMapper().fromJson(job.getJobData(), LinkedHashMap.class);
         scriptEngineInstance.wrapFunctionAndEval(fileResource.getContent(), scriptObject -> {
-            scriptObject.executeVoid(jobData);
+            final Value bindings = scriptObject.getContext().getBindings(GraalConstant.Js_Language_Id);
+            final String ctxName = "jobData";
+            try {
+                bindings.putMember(ctxName, jobData);
+                scriptObject.executeVoid(jobData);
+            } finally {
+                bindings.removeMember(ctxName);
+            }
         });
         log.debug("JsJob执行完成，JobId=={} | FileResourceId=={}", job.getId(), jsJob.getFileResourceId());
         if (Objects.equals(job.getIsUpdateData(), EnumConstant.JOB_IS_UPDATE_DATA_1)) {
