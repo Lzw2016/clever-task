@@ -1,5 +1,6 @@
 package org.clever.task.core;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.clever.task.core.config.SchedulerConfig;
 import org.clever.task.core.cron.CronExpressionUtil;
@@ -31,6 +32,7 @@ public class TaskInstance {
     /**
      * 调度器数据存储对象
      */
+    @Getter
     private final TaskStore taskStore;
     /**
      * 调度器上下文
