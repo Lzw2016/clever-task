@@ -1,6 +1,7 @@
 package org.clever.task.core;
 
 import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
 import org.clever.task.core.entity.*;
 import org.clever.task.core.exception.SchedulerException;
 import org.clever.task.core.model.SchedulerInfo;
@@ -247,6 +248,28 @@ public class TaskStore {
         );
     }
 
+    public int updateDisableJob(String namespace, Integer disable, Long... jobIds) {
+        final Object[] args = new Object[jobIds.length + 2];
+        args[0] = disable;
+        args[1] = namespace;
+        System.arraycopy(jobIds, 0, args, 2, jobIds.length);
+        return jdbcTemplate.update(
+                String.format(SqlConstant.UPDATE_DISABLE_JOB, StringUtils.repeat("?", ", ", jobIds.length)),
+                args
+        );
+    }
+
+    public int updateDisableTrigger(String namespace, Integer disable, Long... triggerIds) {
+        final Object[] args = new Object[triggerIds.length + 2];
+        args[0] = disable;
+        args[1] = namespace;
+        System.arraycopy(triggerIds, 0, args, 2, triggerIds.length);
+        return jdbcTemplate.update(
+                String.format(SqlConstant.UPDATE_DISABLE_TRIGGER, StringUtils.repeat("?", ", ", triggerIds.length)),
+                args
+        );
+    }
+
     /**
      * 获取HttpJob
      */
@@ -439,6 +462,34 @@ public class TaskStore {
         int count = namedParameterJdbcTemplate.update(sql, new MapSqlParameterSource(paramMap), keyHolder);
         shellJob.setId(Objects.requireNonNull(keyHolder.getKey()).longValue());
         return count;
+    }
+
+    public void delTriggerByJobId(String namespace, Long jobId) {
+        jdbcTemplate.update(SqlConstant.DELETE_TRIGGER_BY_JOB_ID, namespace, jobId);
+    }
+
+    public void delJobByJobId(String namespace, Long jobId) {
+        jdbcTemplate.update(SqlConstant.DELETE_JOB_BY_JOB_ID, namespace, jobId);
+    }
+
+    public void delHttpJobByJobId(String namespace, Long jobId) {
+        jdbcTemplate.update(SqlConstant.DELETE_HTTP_JOB_BY_JOB_ID, namespace, jobId);
+    }
+
+    public void delJavaJobByJobId(String namespace, Long jobId) {
+        jdbcTemplate.update(SqlConstant.DELETE_JAVA_JOB_BY_JOB_ID, namespace, jobId);
+    }
+
+    public void delJsJobByJobId(String namespace, Long jobId) {
+        jdbcTemplate.update(SqlConstant.DELETE_JS_JOB_BY_JOB_ID, namespace, jobId);
+    }
+
+    public void delShellJobByJobId(String namespace, Long jobId) {
+        jdbcTemplate.update(SqlConstant.DELETE_SHELL_JOB_BY_JOB_ID, namespace, jobId);
+    }
+
+    public void delFileResourceById(String namespace, Long jobId) {
+        jdbcTemplate.update(SqlConstant.DELETE_FILE_RESOURCE_BY_ID, namespace, jobId);
     }
 
     /**

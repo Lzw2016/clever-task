@@ -50,6 +50,15 @@ public interface EnumConstant {
     int JOB_TRIGGER_ALLOW_CONCURRENT_1 = 1;
 
     /**
+     * 是否禁用：0-启用，1-禁用
+     */
+    int JOB_TRIGGER_DISABLE_0 = 0;
+    /**
+     * 是否禁用：0-启用，1-禁用
+     */
+    int JOB_TRIGGER_DISABLE_1 = 1;
+
+    /**
      * 任务类型，1：cron触发，2：固定速率触发
      */
     int JOB_TRIGGER_TYPE_1 = 1;

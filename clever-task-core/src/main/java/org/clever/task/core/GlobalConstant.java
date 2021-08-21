@@ -22,7 +22,7 @@ public interface GlobalConstant {
     String JOB_EXECUTOR_NAME = "定时任务执行线程池";
 
     // 数据完整性校验(一致性校验)的时间间隔(单位：毫秒)
-    int DATA_CHECK_INTERVAL = 300_000;
+    int DATA_CHECK_INTERVAL = 3600_000;
     // 调度器节点注册的时间间隔(单位：毫秒)
     int REGISTER_SCHEDULER_INTERVAL = 60_000;
     // 初始化触发器下一次触发时间(校准触发器触发时间)的时间间隔(单位：毫秒)

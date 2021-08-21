@@ -120,6 +120,10 @@ public interface SqlConstant {
 
     String GET_LOCK_TRIGGER = "update job_trigger set lock_version=lock_version+1 where id=? and namespace=? and lock_version=?";
 
+    String DELETE_TRIGGER_BY_JOB_ID = "delete from job_trigger where namespace=? and job_id=?";
+
+    String UPDATE_DISABLE_TRIGGER = "update job_trigger set disable=? where namespace=? and id in ( %s )";
+
     // ---------------------------------------------------------------------------------------------------------------------------------------- job
 
     String JOB_TABLE_NAME = "job";
@@ -132,23 +136,16 @@ public interface SqlConstant {
 
     String QUERY_ALL_JOB = "select * from job where namespace=?";
 
-    // ---------------------------------------------------------------------------------------------------------------------------------------- http_job
+    String UPDATE_DISABLE_JOB = "update job set disable=? where namespace=? and id in ( %s )";
 
-    String HTTP_JOB_TABLE_NAME = "http_job";
-
-    // ---------------------------------------------------------------------------------------------------------------------------------------- java_job
-
-    String JAVA_JOB_TABLE_NAME = "java_job";
-
-    // ---------------------------------------------------------------------------------------------------------------------------------------- js_job
-
-    String JS_JOB_TABLE_NAME = "js_job";
-
-    // ---------------------------------------------------------------------------------------------------------------------------------------- shell_job
-
-    String SHELL_JOB_TABLE_NAME = "shell_job";
+    String DELETE_JOB_BY_JOB_ID = "delete from job where namespace=? and id=?";
 
     // ---------------------------------------------------------------------------------------------------------------------------------------- xxx_job
+
+    String HTTP_JOB_TABLE_NAME = "http_job";
+    String JAVA_JOB_TABLE_NAME = "java_job";
+    String JS_JOB_TABLE_NAME = "js_job";
+    String SHELL_JOB_TABLE_NAME = "shell_job";
 
     String HTTP_JOB_BY_JOB_ID = "select * from http_job where namespace=? and job_id=?";
 
@@ -157,6 +154,14 @@ public interface SqlConstant {
     String JS_JOB_BY_JOB_ID = "select * from js_job where namespace=? and job_id=?";
 
     String SHELL_JOB_BY_JOB_ID = "select * from shell_job where namespace=? and job_id=?";
+
+    String DELETE_HTTP_JOB_BY_JOB_ID = "delete from http_job where namespace=? and job_id=?";
+
+    String DELETE_JAVA_JOB_BY_JOB_ID = "delete from java_job where namespace=? and job_id=?";
+
+    String DELETE_JS_JOB_BY_JOB_ID = "delete from js_job where namespace=? and job_id=?";
+
+    String DELETE_SHELL_JOB_BY_JOB_ID = "delete from shell_job where namespace=? and job_id=?";
 
     // ---------------------------------------------------------------------------------------------------------------------------------------- xxx_log
 
@@ -193,4 +198,6 @@ public interface SqlConstant {
     String FILE_RESOURCE_TABLE_NAME = "file_resource";
 
     String GET_FILE_RESOURCE_BY_ID = "select * from file_resource where id=? and namespace=?";
+
+    String DELETE_FILE_RESOURCE_BY_ID = "delete from file_resource where namespace=? and id=?";
 }

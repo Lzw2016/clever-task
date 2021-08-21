@@ -67,6 +67,7 @@
         <maven.compiler.compilerVersion>1.8</maven.compiler.compilerVersion>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <clever-graaljs.version>0.0.1-SNAPSHOT</clever-graaljs.version>
     </properties>
 
     <dependencyManagement>
@@ -86,7 +87,7 @@
             <dependency>
                 <groupId>org.clever</groupId>
                 <artifactId>clever-graaljs-core</artifactId>
-                <version>0.0.1-SNAPSHOT</version>
+                <version>${clever-graaljs.version}</version>
             </dependency>
             <!--commons-exec-->
             <dependency>

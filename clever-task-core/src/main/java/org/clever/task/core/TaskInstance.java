@@ -489,43 +489,74 @@ public class TaskInstance {
     /**
      * 禁用定时任务
      */
-    public void disableJob(Long jobId) {
+    public int disableJob(Long jobId) {
+        Assert.notNull(jobId, "参数jobId不能为空");
+        return taskStore.beginTX(status -> taskStore.updateDisableJob(getNamespace(), EnumConstant.JOB_DISABLE_1, jobId));
     }
 
     /**
      * 批量禁用定时任务
      */
-    public void disableJobs(Collection<Long> jobIds) {
+    public int disableJobs(Collection<Long> jobIds) {
         Assert.notEmpty(jobIds, "参数jobIds不能为空");
         Assert.noNullElements(jobIds, "参数jobIds含有空jobId");
-        taskStore.beginTX(status -> {
-            jobIds.forEach(this::disableJob);
-            return null;
-        });
+        return taskStore.beginTX(status -> taskStore.updateDisableJob(getNamespace(), EnumConstant.JOB_DISABLE_1, jobIds.toArray(new Long[0])));
     }
 
     /**
      * 启用定时任务
      */
-    public void enableJob(Long jobId) {
+    public int enableJob(Long jobId) {
+        Assert.notNull(jobId, "参数jobId不能为空");
+        return taskStore.beginTX(status -> taskStore.updateDisableJob(getNamespace(), EnumConstant.JOB_DISABLE_0, jobId));
     }
 
     /**
      * 批量启用定时任务
      */
-    public void enableJobs(Collection<Long> jobIds) {
+    public int enableJobs(Collection<Long> jobIds) {
         Assert.notEmpty(jobIds, "参数jobIds不能为空");
         Assert.noNullElements(jobIds, "参数jobIds含有空jobId");
-        taskStore.beginTX(status -> {
-            jobIds.forEach(this::enableJob);
-            return null;
-        });
+        return taskStore.beginTX(status -> taskStore.updateDisableJob(getNamespace(), EnumConstant.JOB_DISABLE_0, jobIds.toArray(new Long[0])));
     }
 
     /**
      * 删除定时任务
      */
     public void deleteJob(Long jobId) {
+        Assert.notNull(jobId, "参数jobId不能为空");
+        final String namespace = getNamespace();
+        taskStore.beginTX(status -> {
+            Job job = taskStore.getJob(namespace, jobId);
+            Assert.notNull(job, "job不存在");
+            taskStore.delJobByJobId(namespace, jobId);
+            taskStore.delTriggerByJobId(namespace, jobId);
+            switch (job.getType()) {
+                case EnumConstant.JOB_TYPE_1:
+                    taskStore.delHttpJobByJobId(namespace, jobId);
+                    break;
+                case EnumConstant.JOB_TYPE_2:
+                    taskStore.delJavaJobByJobId(namespace, jobId);
+                    break;
+                case EnumConstant.JOB_TYPE_3:
+                    JsJob jsJob = taskStore.getJsJob(namespace, jobId);
+                    taskStore.delJsJobByJobId(namespace, jobId);
+                    if (jsJob != null && jsJob.getFileResourceId() != null) {
+                        taskStore.delFileResourceById(namespace, jsJob.getFileResourceId());
+                    }
+                    break;
+                case EnumConstant.JOB_TYPE_4:
+                    ShellJob shellJob = taskStore.getShellJob(namespace, jobId);
+                    taskStore.delShellJobByJobId(namespace, jobId);
+                    if (shellJob != null && shellJob.getFileResourceId() != null) {
+                        taskStore.delFileResourceById(namespace, shellJob.getFileResourceId());
+                    }
+                    break;
+                default:
+                    throw new IllegalArgumentException("不支持的任务类型: Type=" + job.getType());
+            }
+            return null;
+        });
     }
 
     /**
@@ -544,6 +575,45 @@ public class TaskInstance {
      * 立即执行定时任务
      */
     public void execJob(Long jobId) {
+        Assert.notNull(jobId, "参数jobId不能为空");
+        final Scheduler scheduler = taskContext.getCurrentScheduler();
+        final Job job = taskStore.beginReadOnlyTX(status -> taskStore.getJob(scheduler.getNamespace(), jobId));
+        Assert.notNull(job, "job不存在");
+        jobWorker.execute(() -> {
+            final Date dbNow = taskStore.getDataSourceNow();
+            // 记录触发器日志
+            final JobTriggerLog jobTriggerLog = newJobTriggerLog(dbNow, jobId);
+            schedulerWorker.execute(() -> this.jobTriggeredListener(jobTriggerLog));
+            // 执行任务
+            final JobLog jobLog = newJobLog(dbNow, job, null, jobTriggerLog.getId());
+            final String oldJobData = job.getJobData();
+            // 控制并发执行 - 是否允许多节点并发执行
+            final boolean allowConcurrent = Objects.equals(EnumConstant.JOB_ALLOW_CONCURRENT_1, job.getAllowConcurrent());
+            if (allowConcurrent) {
+                executeJob(dbNow, job, jobLog);
+            } else {
+                try {
+                    taskStore.beginTX(status -> {
+                        // 获取定时任务悲观锁 - 判断是否被其他节点执行了
+                        boolean lock = taskStore.getLockJob(job.getNamespace(), job.getId(), job.getLockVersion());
+                        if (lock) {
+                            executeJob(dbNow, job, jobLog);
+                        }
+                        return null;
+                    });
+                } catch (Exception e) {
+                    log.error("[TaskInstance] 手动执行Job失败 | id={} | name={} | instanceName={}", job.getId(), job.getName(), this.getInstanceName(), e);
+                    jobLog.setStatus(EnumConstant.JOB_LOG_STATUS_1);
+                    jobLog.setExceptionInfo(ExceptionUtils.getStackTraceAsString(e));
+                    jobEndRunListener(jobLog);
+                }
+            }
+            // 更新任务数据
+            final String newJobData = job.getJobData();
+            if (!Objects.equals(oldJobData, newJobData) && Objects.equals(job.getIsUpdateData(), EnumConstant.JOB_IS_UPDATE_DATA_1)) {
+                taskStore.beginTX(status -> taskStore.updateJodData(job.getNamespace(), job.getId(), newJobData));
+            }
+        });
     }
 
     /**
@@ -562,6 +632,7 @@ public class TaskInstance {
      * 中断定时任务
      */
     public void interruptJob(Long jobId) {
+        // TODO 中断定时任务
     }
 
     /**
@@ -577,7 +648,7 @@ public class TaskInstance {
     }
 
 //    /**
-//     *
+//     * TODO 更新任务信息
 //     */
 //    public void updateJob() {
 //    }
@@ -592,37 +663,33 @@ public class TaskInstance {
     /**
      * 禁用触发器
      */
-    public void disableTrigger(Long triggerId) {
+    public int disableTrigger(Long triggerId) {
+        return taskStore.beginTX(status -> taskStore.updateDisableTrigger(getNamespace(), EnumConstant.JOB_TRIGGER_DISABLE_1, triggerId));
     }
 
     /**
      * 批量禁用触发器
      */
-    public void disableTriggers(Collection<Long> triggerIds) {
+    public int disableTriggers(Collection<Long> triggerIds) {
         Assert.notEmpty(triggerIds, "参数triggerIds不能为空");
         Assert.noNullElements(triggerIds, "参数triggerIds含有空triggerId");
-        taskStore.beginTX(status -> {
-            triggerIds.forEach(this::disableTrigger);
-            return null;
-        });
+        return taskStore.beginTX(status -> taskStore.updateDisableTrigger(getNamespace(), EnumConstant.JOB_TRIGGER_DISABLE_1, triggerIds.toArray(new Long[0])));
     }
 
     /**
      * 启用触发器
      */
-    public void enableTrigger(Long triggerId) {
+    public int enableTrigger(Long triggerId) {
+        return taskStore.beginTX(status -> taskStore.updateDisableTrigger(getNamespace(), EnumConstant.JOB_TRIGGER_DISABLE_0, triggerId));
     }
 
     /**
      * 批量启用触发器
      */
-    public void enableTriggers(Collection<Long> triggerIds) {
+    public int enableTriggers(Collection<Long> triggerIds) {
         Assert.notEmpty(triggerIds, "参数jobIds不能为空");
         Assert.noNullElements(triggerIds, "参数triggerIds含有空triggerId");
-        taskStore.beginTX(status -> {
-            triggerIds.forEach(this::enableTrigger);
-            return null;
-        });
+        return taskStore.beginTX(status -> taskStore.updateDisableTrigger(getNamespace(), EnumConstant.JOB_TRIGGER_DISABLE_0, triggerIds.toArray(new Long[0])));
     }
 
     /**
@@ -1199,6 +1266,9 @@ public class TaskInstance {
         return schedulerLog;
     }
 
+    /**
+     * 自动触发
+     */
     private JobTriggerLog newJobTriggerLog(Date dbNow, JobTrigger jobTrigger) {
         final Scheduler scheduler = taskContext.getCurrentScheduler();
         JobTriggerLog jobTriggerLog = new JobTriggerLog();
@@ -1215,13 +1285,31 @@ public class TaskInstance {
         return jobTriggerLog;
     }
 
+    /**
+     * 手动触发
+     */
+    private JobTriggerLog newJobTriggerLog(Date dbNow, Long jobId) {
+        final Scheduler scheduler = taskContext.getCurrentScheduler();
+        JobTriggerLog jobTriggerLog = new JobTriggerLog();
+        jobTriggerLog.setId(taskContext.getSnowFlake().nextId());
+        jobTriggerLog.setNamespace(scheduler.getNamespace());
+        jobTriggerLog.setInstanceName(scheduler.getInstanceName());
+        jobTriggerLog.setJobId(jobId);
+        jobTriggerLog.setTriggerName("用户手动触发");
+        jobTriggerLog.setFireTime(dbNow);
+        jobTriggerLog.setIsManual(EnumConstant.JOB_TRIGGER_IS_MANUAL_1);
+        return jobTriggerLog;
+    }
+
     private JobLog newJobLog(Date dbNow, Job job, JobTrigger jobTrigger, Long jobTriggerLogId) {
         final Scheduler scheduler = taskContext.getCurrentScheduler();
         JobLog jobLog = new JobLog();
         jobLog.setNamespace(scheduler.getNamespace());
         jobLog.setInstanceName(scheduler.getInstanceName());
         jobLog.setJobTriggerLogId(jobTriggerLogId);
-        jobLog.setJobTriggerId(jobTrigger.getId());
+        if (jobTrigger != null) {
+            jobLog.setJobTriggerId(jobTrigger.getId());
+        }
         jobLog.setJobId(job.getId());
         jobLog.setFireTime(dbNow);
         jobLog.setRetryCount(0);
