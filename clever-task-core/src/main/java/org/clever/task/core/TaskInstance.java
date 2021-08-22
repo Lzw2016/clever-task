@@ -409,9 +409,10 @@ public class TaskInstance {
     /**
      * 增加定时任务
      */
-    public void addJob(AbstractJob jobModel, AbstractTrigger trigger) {
+    public AddJobRes addJob(AbstractJob jobModel, AbstractTrigger trigger) {
         Assert.notNull(jobModel, "参数jobModel不能为空");
         Assert.notNull(trigger, "参数trigger不能为空");
+        final AddJobRes addJobRes = new AddJobRes();
         final Scheduler scheduler = taskContext.getCurrentScheduler();
         final Job job = jobModel.toJob();
         job.setNamespace(scheduler.getNamespace());
@@ -430,6 +431,8 @@ public class TaskInstance {
             final Date nextFireTime = JobTriggerUtils.getNextFireTime(jobTrigger);
             jobTrigger.setNextFireTime(nextFireTime);
             count += taskStore.addJobTrigger(jobTrigger);
+            addJobRes.setJob(job);
+            addJobRes.setJobTrigger(jobTrigger);
             if (jobModel instanceof HttpJobModel) {
                 // 新增 http_job
                 HttpJobModel httpJobModel = (HttpJobModel) jobModel;
@@ -437,6 +440,7 @@ public class TaskInstance {
                 httpJob.setNamespace(scheduler.getNamespace());
                 httpJob.setJobId(job.getId());
                 count += taskStore.addHttpJob(httpJob);
+                addJobRes.setHttpJob(httpJob);
             } else if (jobModel instanceof JavaJobModel) {
                 // 新增 java_job
                 JavaJobModel javaJobModel = (JavaJobModel) jobModel;
@@ -444,6 +448,7 @@ public class TaskInstance {
                 javaJob.setNamespace(scheduler.getNamespace());
                 javaJob.setJobId(job.getId());
                 count += taskStore.addJavaJob(javaJob);
+                addJobRes.setJavaJob(javaJob);
             } else if (jobModel instanceof JsJobModel) {
                 // 新增 file_resource
                 // 新增 js_job
@@ -456,6 +461,8 @@ public class TaskInstance {
                 jsJob.setJobId(job.getId());
                 jsJob.setFileResourceId(fileResource.getId());
                 count += taskStore.addJsJob(jsJob);
+                addJobRes.setJsJob(jsJob);
+                addJobRes.setFileResource(fileResource);
             } else if (jobModel instanceof ShellJobModel) {
                 // 新增 file_resource
                 // 新增 shell_job
@@ -468,24 +475,29 @@ public class TaskInstance {
                 shellJob.setJobId(job.getId());
                 shellJob.setFileResourceId(fileResource.getId());
                 count += taskStore.addShellJob(shellJob);
+                addJobRes.setShellJob(shellJob);
+                addJobRes.setFileResource(fileResource);
             } else {
                 throw new IllegalArgumentException("不支持的任务类型:" + jobModel.getClass().getName());
             }
             return count;
         });
+        return addJobRes;
     }
 
     /**
      * 批量增加定时任务
      */
-    public void addJobs(Map<AbstractJob, AbstractTrigger> jobs) {
+    public List<AddJobRes> addJobs(Map<AbstractJob, AbstractTrigger> jobs) {
         Assert.notEmpty(jobs, "参数jobs不能为空");
         Assert.noNullElements(jobs.keySet(), "参数jobs含有空job");
         Assert.noNullElements(jobs.values(), "参数jobs含有空trigger");
+        final List<AddJobRes> resList = new ArrayList<>(jobs.size());
         taskStore.beginTX(status -> {
-            jobs.forEach(this::addJob);
-            return null;
+            jobs.forEach((abstractJob, trigger) -> resList.add(this.addJob(abstractJob, trigger)));
+            return resList;
         });
+        return resList;
     }
 
     /**
