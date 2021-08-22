@@ -40,7 +40,7 @@ public class JsJobModel extends AbstractJob {
         Assert.hasText(fileContent, "参数fileContent不能为空");
         this.name = name;
         this.filePath = StringUtils.isNotBlank(filePath) ? filePath : "/";
-        this.fileName = StringUtils.isNotBlank(fileName) ? filePath : String.format("%s_%s.js", name, UUID.randomUUID());
+        this.fileName = StringUtils.isNotBlank(fileName) ? fileName : String.format("%s_%s.js", name, UUID.randomUUID());
         this.fileContent = fileContent;
     }
 
