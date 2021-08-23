@@ -1317,6 +1317,8 @@ public class TaskInstance {
         jobTriggerLog.setTriggerName("用户手动触发");
         jobTriggerLog.setFireTime(dbNow);
         jobTriggerLog.setIsManual(EnumConstant.JOB_TRIGGER_IS_MANUAL_1);
+        jobTriggerLog.setFireCount(-1L);
+        jobTriggerLog.setMisFired(EnumConstant.JOB_TRIGGER_MIS_FIRED_0);
         return jobTriggerLog;
     }
 
