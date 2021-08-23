@@ -590,6 +590,7 @@ public class TaskInstance {
      */
     public void execJob(Long jobId) {
         Assert.notNull(jobId, "参数jobId不能为空");
+        final long startTime = System.currentTimeMillis();
         final Scheduler scheduler = taskContext.getCurrentScheduler();
         final Job job = taskStore.beginReadOnlyTX(status -> taskStore.getJob(scheduler.getNamespace(), jobId));
         Assert.notNull(job, "job不存在");
@@ -597,7 +598,11 @@ public class TaskInstance {
             final Date dbNow = taskStore.getDataSourceNow();
             // 记录触发器日志
             final JobTriggerLog jobTriggerLog = newJobTriggerLog(dbNow, jobId);
-            schedulerWorker.execute(() -> this.jobTriggeredListener(jobTriggerLog));
+            schedulerWorker.execute(() -> {
+                final long endTime = System.currentTimeMillis();
+                jobTriggerLog.setTriggerTime((int) (endTime - startTime));
+                this.jobTriggeredListener(jobTriggerLog);
+            });
             // 执行任务
             final JobLog jobLog = newJobLog(dbNow, job, null, jobTriggerLog.getId());
             final String oldJobData = job.getJobData();
