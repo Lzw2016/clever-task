@@ -9,13 +9,14 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * 任务线程执行器
  * 作者：lizw <br/>
  * 创建时间：2021/08/09 21:21 <br/>
  */
 @Slf4j
 public class WorkExecutor {
     /**
-     * 守护线程名称
+     * 线程名称
      */
     private final String name;
     /**
